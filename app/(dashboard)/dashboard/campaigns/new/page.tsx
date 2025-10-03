@@ -6,12 +6,14 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Upload, Mail } from 'lucide-react'
 import { toast } from 'sonner'
+import { DomainSelector, DomainFromEmailInput } from '@/components/dashboard/domain-selector'
 
 export default function NewCampaignPage() {
   const router = useRouter()
   const [campaignName, setCampaignName] = useState('')
   const [campaignDescription, setCampaignDescription] = useState('')
-  const [fromEmail, setFromEmail] = useState('onboarding@resend.dev')
+  const [selectedDomainId, setSelectedDomainId] = useState('')
+  const [localPart, setLocalPart] = useState('noreply')
   const [fromName, setFromName] = useState('LeadsTeNet')
   const [replyToEmail, setReplyToEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,7 +34,8 @@ export default function NewCampaignPage() {
         body: JSON.stringify({
           name: campaignName.trim(),
           description: campaignDescription.trim() || null,
-          from_email: fromEmail.trim(),
+          domain_id: selectedDomainId || null,
+          local_part: localPart.trim(),
           from_name: fromName.trim(),
           reply_to_email: replyToEmail.trim() || null
         })
@@ -110,21 +113,38 @@ export default function NewCampaignPage() {
           {/* Email Configuration */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Settings</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <div className="space-y-4">
+              {/* Domain Selection */}
               <div>
-                <label htmlFor="fromEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                  From Email
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sending Domain
                 </label>
-                <input
-                  type="email"
-                  id="fromEmail"
-                  value={fromEmail}
-                  onChange={(e) => setFromEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <DomainSelector
+                  value={selectedDomainId}
+                  onValueChange={setSelectedDomainId}
+                  placeholder="Select domain for sending emails..."
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Choose a verified custom domain or leave empty to use the default Resend domain
+                </p>
               </div>
 
+              {/* From Email Configuration */}
+              {selectedDomainId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    From Email Address
+                  </label>
+                  <DomainFromEmailInput
+                    domainId={selectedDomainId}
+                    localPart={localPart}
+                    onLocalPartChange={setLocalPart}
+                  />
+                </div>
+              )}
+
+              {/* From Name */}
               <div>
                 <label htmlFor="fromName" className="block text-sm font-medium text-gray-700 mb-2">
                   From Name
@@ -135,22 +155,24 @@ export default function NewCampaignPage() {
                   value={fromName}
                   onChange={(e) => setFromName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Your Name or Company"
                 />
               </div>
-            </div>
 
-            <div className="mt-4">
-              <label htmlFor="replyToEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                Reply-To Email (Optional)
-              </label>
-              <input
-                type="email"
-                id="replyToEmail"
-                value={replyToEmail}
-                onChange={(e) => setReplyToEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="replies@yourcompany.com"
-              />
+              {/* Reply-To Email */}
+              <div>
+                <label htmlFor="replyToEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reply-To Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  id="replyToEmail"
+                  value={replyToEmail}
+                  onChange={(e) => setReplyToEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="replies@yourcompany.com"
+                />
+              </div>
             </div>
           </div>
 

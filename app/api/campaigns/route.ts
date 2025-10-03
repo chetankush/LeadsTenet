@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, leads, from_email, from_name } = body
+    const { name, description, leads, domain_id, local_part, from_name, reply_to_email } = body
 
     // Validate required fields
     if (!name) {
@@ -56,12 +56,27 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
+    // Determine from_email based on domain selection
+    let fromEmail = null
+    if (domain_id && local_part) {
+      // Import domain service to get domain details
+      const { domainService } = await import('@/lib/domain-service')
+      const user = await dbService.getCurrentUser()
+      if (user) {
+        const domain = await domainService.getUserDomain(user.id, domain_id)
+        if (domain && domain.status === 'verified') {
+          fromEmail = domainService.getEmailFromAddress(domain, local_part)
+        }
+      }
+    }
+
     // Create campaign
     const campaign = await dbService.createCampaign({
       name,
       description,
-      from_email: from_email || null,
-      from_name: from_name || null
+      from_email: fromEmail,
+      from_name: from_name || null,
+      reply_to_email: reply_to_email || null
     })
 
     if (!campaign) {

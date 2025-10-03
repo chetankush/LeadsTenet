@@ -1,10 +1,13 @@
 import { Resend } from 'resend'
 import type { PersonalizedContent, LeadData } from './ai-service'
+import { domainService } from './domain-service'
 
 interface EmailConfig {
   fromEmail: string
   fromName: string
   replyTo?: string
+  domainId?: string // Add domain ID for custom domain support
+  userId?: string // Add user ID for domain lookup
 }
 
 interface SendEmailRequest {
@@ -51,12 +54,32 @@ export class EmailService {
    */
   sendEmail = async (request: SendEmailRequest): Promise<EmailResult> => {
     const { lead, content, config } = request
-    
+
     console.log(`Sending email to ${lead.name} (${lead.email})`)
-    
+
     try {
+      // Determine from address - use custom domain if specified
+      let fromAddress = 'onboarding@resend.dev' // fallback default
+
+      if (config.domainId) {
+        try {
+          // Extract user ID from config or get from context
+          // For now, we'll need to pass userId in config or modify this later
+          const domain = await domainService.getUserDomain(config.userId || '', config.domainId)
+          if (domain && domain.status === 'verified') {
+            const localPart = config.fromEmail?.split('@')[0] || 'noreply'
+            fromAddress = domainService.getEmailFromAddress(domain, localPart)
+          }
+        } catch (error) {
+          console.warn('Failed to get custom domain, using fallback:', error)
+        }
+      } else if (config.fromEmail && config.fromEmail !== 'onboarding@resend.dev') {
+        // Use config email if it's not the default fallback
+        fromAddress = config.fromEmail
+      }
+
       const emailData = {
-        from: 'onboarding@resend.dev', // Use the verified sender from your example
+        from: fromAddress,
         to: [lead.email!],
         subject: content.subject,
         html: this.formatEmailContent(content.body, lead),

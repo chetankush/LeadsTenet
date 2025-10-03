@@ -3,15 +3,16 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { 
-  BarChart3, 
-  FileSpreadsheet, 
-  Mail, 
-  Settings, 
-  User, 
+import {
+  BarChart3,
+  FileSpreadsheet,
+  Mail,
+  Settings,
+  User,
   Home,
   Upload,
-  PlusCircle
+  PlusCircle,
+  Globe
 } from 'lucide-react'
 
 const navigation = [
@@ -39,6 +40,11 @@ const navigation = [
     name: 'Analytics',
     href: '/dashboard/analytics',
     icon: BarChart3,
+  },
+  {
+    name: 'Domains',
+    href: '/dashboard/domains',
+    icon: Globe,
   },
   {
     name: 'Profile',
