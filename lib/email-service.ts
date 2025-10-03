@@ -41,11 +41,14 @@ export class EmailService {
   private rateLimitDelay: number = 2000 // 2 seconds between emails
 
   constructor() {
-    // Use your working API key directly for now
-    const apiKey = process.env.RESEND_API_KEY || 're_Mdye53Y9_EEYZfU5pzgCKhZXtTgrVKwiX'
-    
+    const apiKey = process.env.RESEND_API_KEY
+
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is required')
+    }
+
     console.log('🔑 Email Service: Initializing with Resend API key:', apiKey.substring(0, 10) + '...')
-    
+
     this.resend = new Resend(apiKey)
   }
 
