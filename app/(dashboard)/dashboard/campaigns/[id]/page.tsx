@@ -5,11 +5,12 @@ import { useRouter, useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
+import { SentEmailsList } from '@/components/dashboard/sent-emails-list'
+import {
   ArrowLeft,
-  Mail, 
-  Users, 
-  TrendingUp, 
+  Mail,
+  Users,
+  TrendingUp,
   Calendar,
   Eye,
   Download,
@@ -294,6 +295,9 @@ export default function CampaignDetailPage() {
           </div>
         </Card>
       </div>
+
+      {/* Sent Emails List */}
+      <SentEmailsList campaignId={campaignId} />
 
       {/* Leads List */}
       <Card className="p-6">

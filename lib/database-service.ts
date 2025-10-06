@@ -370,12 +370,14 @@ export class DatabaseService {
     lead_id: string
     campaign_id: string
     subject: string
+    body_text?: string
+    body_html?: string
     from_email: string
     to_email: string
     message_id?: string
     status: EmailLog['status']
   }): Promise<EmailLog | null> {
-    const { data, error } = await this.supabase
+    const { data, error} = await this.supabase
       .from('email_logs')
       .insert(emailData)
       .select()
@@ -387,6 +389,29 @@ export class DatabaseService {
     }
 
     return data
+  }
+
+  // Get email logs for a campaign
+  async getCampaignEmailLogs(campaignId: string): Promise<any[]> {
+    const { data, error } = await this.supabase
+      .from('email_logs')
+      .select(`
+        *,
+        leads:lead_id (
+          name,
+          email,
+          company
+        )
+      `)
+      .eq('campaign_id', campaignId)
+      .order('sent_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching email logs:', error)
+      return []
+    }
+
+    return data || []
   }
 
   async updateEmailLogStatus(emailLogId: string, status: EmailLog['status'], errorMessage?: string): Promise<void> {
@@ -440,7 +465,7 @@ export class DatabaseService {
       .eq('action', action)
       .gte('date', startDate)
 
-    const currentCount = usageData?.reduce((sum, log) => sum + (log.count || 0), 0) || 0
+    const currentCount = usageData?.reduce((sum: number, log: any) => sum + (log.count || 0), 0) || 0
 
     let limit = 0
     switch (action) {
@@ -486,18 +511,41 @@ export class DatabaseService {
     const user = await this.getCurrentUser()
     if (!user) return null
 
-    const { data, error } = await this.supabase
-      .from('user_dashboard_stats')
+    // Get campaign stats
+    const { data: campaigns } = await this.supabase
+      .from('campaigns')
       .select('*')
-      .eq('clerk_user_id', this.userId)
-      .single()
+      .eq('user_id', user.id)
 
-    if (error) {
-      console.error('Error fetching dashboard stats:', error)
-      return null
+    const totalCampaigns = campaigns?.length || 0
+    const activeCampaigns = campaigns?.filter((c: any) => c.status === 'active').length || 0
+
+    // Get total leads
+    const { count: totalLeads } = await this.supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .in('campaign_id', campaigns?.map((c: any) => c.id) || [])
+
+    // Get email stats
+    const { count: totalEmails } = await this.supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .in('campaign_id', campaigns?.map((c: any) => c.id) || [])
+
+    const { count: openedEmails } = await this.supabase
+      .from('email_logs')
+      .select('*', { count: 'exact', head: true })
+      .in('campaign_id', campaigns?.map((c: any) => c.id) || [])
+      .eq('status', 'opened')
+
+    return {
+      totalCampaigns,
+      activeCampaigns,
+      totalLeads: totalLeads || 0,
+      totalEmails: totalEmails || 0,
+      openedEmails: openedEmails || 0,
+      openRate: totalEmails ? Math.round((openedEmails || 0) / totalEmails * 100) : 0
     }
-
-    return data
   }
 
   async getWeeklyUsage(userId: string, startDate: Date): Promise<Array<{name: string, emails: number, leads: number}>> {
@@ -507,8 +555,8 @@ export class DatabaseService {
 
       // Get the last 7 days of data
       const endDate = new Date()
-      const days = []
-      
+      const days: Array<{date: string, name: string, emails: number, leads: number}> = []
+
       // Create array of last 7 days
       for (let i = 6; i >= 0; i--) {
         const date = new Date()
@@ -534,7 +582,7 @@ export class DatabaseService {
         console.error('Error fetching email usage:', emailError)
       } else if (emailData) {
         // Map email data to days
-        emailData.forEach(record => {
+        emailData.forEach((record: any) => {
           const day = days.find(d => d.date === record.date)
           if (day) {
             day.emails += record.count || 0
@@ -555,7 +603,7 @@ export class DatabaseService {
         console.error('Error fetching leads usage:', leadsError)
       } else if (leadsData) {
         // Map leads data to days
-        leadsData.forEach(record => {
+        leadsData.forEach((record: any) => {
           const day = days.find(d => d.date === record.date)
           if (day) {
             day.leads += record.count || 0

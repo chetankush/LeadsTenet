@@ -149,16 +149,17 @@ export async function POST(request: NextRequest) {
         console.log('- Total sent:', emailResults.totalSent)
         console.log('- Total failed:', emailResults.totalFailed)
 
-        // Log email results to database
+        // Log email results to database with full content
         for (let i = 0; i < emailResults.results.length; i++) {
           const result = emailResults.results[i]
           const leadData = leads.find(l => l.email === result.leadEmail)
-          
+
           if (leadData) {
             await dbService.createEmailLog({
               lead_id: leadData.id,
               campaign_id: campaignId,
               subject: emailRequests[i].content.subject,
+              body_text: emailRequests[i].content.body, // Store full email body
               from_email: finalEmailConfig.fromEmail,
               to_email: result.leadEmail,
               message_id: result.messageId,

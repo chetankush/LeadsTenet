@@ -12,7 +12,8 @@ import {
   Home,
   Upload,
   PlusCircle,
-  Globe
+  Globe,
+  FileText
 } from 'lucide-react'
 
 const navigation = [
@@ -35,6 +36,11 @@ const navigation = [
     name: 'Create Campaign',
     href: '/dashboard/campaigns/new',
     icon: PlusCircle,
+  },
+  {
+    name: 'Templates',
+    href: '/dashboard/templates',
+    icon: FileText,
   },
   {
     name: 'Analytics',

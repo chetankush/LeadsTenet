@@ -3,6 +3,7 @@ import { DashboardStats } from '@/components/dashboard/stats'
 import { RecentCampaigns } from '@/components/dashboard/recent-campaigns'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { UsageChart } from '@/components/dashboard/usage-chart'
+import { SampleEmailPreview } from '@/components/dashboard/sample-email-preview'
 
 export default function DashboardPage() {
   return (
@@ -26,6 +27,9 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <QuickActions />
+
+      {/* Sample Email Preview */}
+      <SampleEmailPreview />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Campaigns */}

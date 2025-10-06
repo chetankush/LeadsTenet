@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, leads, domain_id, local_part, from_name, reply_to_email } = body
+    const { name, description, leads, domain_id, local_part, from_name, reply_to_email, template_id } = body
 
     // Validate required fields
     if (!name) {
@@ -101,6 +101,23 @@ export async function POST(request: NextRequest) {
       // Record lead upload usage
       if (createdLeads.length > 0) {
         await dbService.recordUsage('lead_uploaded', createdLeads.length, campaign.id)
+      }
+    }
+
+    // Link template to campaign if provided
+    if (template_id) {
+      try {
+        const supabase = dbService.getSupabaseClient()
+        await supabase
+          .from('campaign_templates')
+          .insert({
+            campaign_id: campaign.id,
+            template_id: template_id,
+            variant_name: 'primary'
+          })
+      } catch (error) {
+        console.error('Error linking template to campaign:', error)
+        // Don't fail campaign creation if template linking fails
       }
     }
 

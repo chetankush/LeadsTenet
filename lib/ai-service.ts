@@ -206,64 +206,87 @@ Lead Information:
 - Email: ${lead.email}
 ${additionalInfo ? additionalInfo : ''}
 
-Context: You are writing from "LeadGen AI Solutions", a company that helps businesses automate their lead generation and improve conversion rates through AI-powered personalization.`
-    
+Context: You are a real person reaching out to connect with someone in the ${lead.industry} industry.`
+
     const channelPrompts = {
-      email: `Create a personalized cold email for this lead.${baseInfo}
+      email: `Write a warm, friendly email to this person.${baseInfo}
 
-IMPORTANT REQUIREMENTS:
-- Use the ACTUAL company name "${lead.company}" throughout the email (not placeholder text)
-- Use the ACTUAL recipient name "${lead.name}" (not placeholder text)  
-- Reference their specific industry "${lead.industry}" naturally in the content
-- Write as if you're personally reaching out from "LeadGen AI Solutions"
-- NO placeholder text like [Your Company] or [Your Name] - use real content
-- Make it sound like you've researched their specific company
-- Include a specific benefit relevant to their industry
-- Keep it under 120 words
-- Professional but conversational tone
-- End with your actual details: "Sarah Johnson, Business Development Manager, LeadGen AI Solutions"
+CRITICAL - SOUND HUMAN, NOT AI:
+- Write like a real person having a genuine conversation
+- Use natural language - contractions (I'm, you're, we've), casual phrases
+- NO corporate jargon or buzzwords (leverage, synergy, cutting-edge, revolutionary)
+- NO AI phrases like "I hope this email finds you well" or "I'd love to pick your brain"
+- Start directly - skip formal openings, just say hi naturally
+- Be specific to THEIR company "${lead.company}" and industry "${lead.industry}"
+- Sound curious and interested, not salesy
+- Use short sentences - mix lengths for natural rhythm
+- One simple idea per paragraph
+- Keep it 60-80 words MAX (very short!)
 
-Email Structure:
-1. Personal greeting using their name
-2. Mention their company and industry specifically  
-3. One specific challenge/opportunity for their industry
-4. Brief value proposition (1-2 sentences)
-5. Clear call-to-action
-6. Professional signature
+TONE GUIDELINES:
+- Friendly colleague, not salesperson
+- Conversational, like texting a work friend
+- Helpful and genuine, not pushy
+- Show real interest in their work
+- Natural enthusiasm, not fake excitement
+
+STRUCTURE (Keep super simple):
+1. Quick friendly greeting with their first name only
+2. One genuine observation about their company/industry (be specific!)
+3. Brief mention of how you help (1 sentence, natural language)
+4. Simple, low-pressure question or invitation to chat
+5. Just your first name and title (no company pitch)
+
+AVOID AT ALL COSTS:
+- "I hope this email finds you well"
+- "I'd love to pick your brain"
+- "Reaching out to..."
+- "I wanted to touch base"
+- "I came across your profile"
+- "Thought I'd reach out"
+- Any template-sounding phrases
+- Multiple exclamation marks!!!
+- Marketing speak
+
+GOOD EXAMPLES OF NATURAL OPENINGS:
+- "Hi [Name],"
+- "Hey [Name],"
+- "[Name] - quick question"
 
 Return ONLY JSON format:
 {
   "subject": "...",
   "body": "...",
-  "tone": "professional",
+  "tone": "friendly",
   "callToAction": "..."
 }`,
-      
-      linkedin: `Create a personalized LinkedIn message for this lead.${baseInfo}
 
-Requirements:
-- Professional but conversational
-- Reference their company/industry
-- Connection-focused approach
-- Keep under 100 words
-- Soft call-to-action
+      linkedin: `Write a short, friendly LinkedIn connection message to this person.${baseInfo}
+
+REQUIREMENTS:
+- Sound like a real person, not AI or marketing
+- Very casual and genuine
+- Mention their company "${lead.company}" specifically
+- Keep under 60 words
+- No corporate speak
+- Friendly, curious tone
 
 Return JSON format:
 {
   "subject": "...",
   "body": "...",
-  "tone": "professional",
+  "tone": "friendly",
   "callToAction": "..."
 }`,
-      
-      twitter: `Create a personalized Twitter DM for this lead.${baseInfo}
 
-Requirements:
-- Casual and engaging tone
-- Brief and to the point
-- Industry-relevant hook
-- Keep under 50 words
-- Compelling call-to-action
+      twitter: `Write a casual, friendly Twitter DM to this person.${baseInfo}
+
+REQUIREMENTS:
+- Super casual, like texting
+- Reference their industry "${lead.industry}"
+- Very brief - under 40 words
+- Natural and conversational
+- No marketing language
 
 Return JSON format:
 {
@@ -273,7 +296,7 @@ Return JSON format:
   "callToAction": "..."
 }`
     }
-    
+
     return channelPrompts[channel]
   }
 
@@ -348,27 +371,29 @@ Return JSON format:
    * Create fallback content when AI fails
    */
   private createFallbackContent = (lead: LeadData, channel: ChannelType): PersonalizedContent => {
+    const firstName = lead.name?.split(' ')[0] || lead.name
+
     const fallbackTemplates = {
       email: {
-        subject: `AI-powered lead generation for ${lead.company}`,
-        body: `Hi ${lead.name},\n\nI noticed ${lead.company} is doing great work in the ${lead.industry} industry. At LeadGen AI Solutions, we help ${lead.industry} companies like ${lead.company} automate their lead generation and increase conversion rates by up to 40%.\n\nWe've helped similar companies streamline their outreach process and generate more qualified leads. Would you be interested in a quick 15-minute call to see how we could help ${lead.company} achieve similar results?\n\nBest regards,\nSarah Johnson\nBusiness Development Manager\nLeadGen AI Solutions`,
-        tone: 'professional',
-        callToAction: 'Would you be interested in a quick 15-minute call?'
+        subject: `Quick question about ${lead.company}`,
+        body: `Hi ${firstName},\n\nI've been looking at companies in ${lead.industry} and came across ${lead.company}. We've helped a few teams in your space save time on lead gen and outreach.\n\nWould it make sense to chat for 10 minutes? No pressure - just thought it might be useful.\n\nBest,\nSarah\nBusiness Development, LeadGen AI`,
+        tone: 'friendly',
+        callToAction: 'Would it make sense to chat for 10 minutes?'
       },
       linkedin: {
         subject: `Connection request`,
-        body: `Hi ${lead.name}, I'd love to connect and learn more about ${lead.company || 'your work'}.`,
-        tone: 'professional',
-        callToAction: 'Would love to connect!'
+        body: `Hi ${firstName}, noticed you're at ${lead.company || 'a company'} in ${lead.industry}. We work with similar teams - would be great to connect!`,
+        tone: 'friendly',
+        callToAction: 'Would be great to connect!'
       },
       twitter: {
-        subject: `Quick hello`,
-        body: `Hey ${lead.name}! Saw ${lead.company || 'your profile'} - would love to chat!`,
+        subject: `Quick question`,
+        body: `Hey ${firstName}! Saw you're working in ${lead.industry}. We help teams like yours with lead gen - mind if I share some ideas?`,
         tone: 'casual',
-        callToAction: 'Let\'s chat!'
+        callToAction: 'Mind if I share some ideas?'
       }
     }
-    
+
     return fallbackTemplates[channel]
   }
 
