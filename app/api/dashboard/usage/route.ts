@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { dbService } from '@/lib/database-service'
+import { createClient } from '@/utils/supabase/server'
+import { createDbService } from '@/lib/database-service'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Ensure user exists in database
-    const clerkUser = await currentUser()
-    if (clerkUser) {
-      await dbService.getOrCreateUser({
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        full_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null,
-        company_name: null
-      })
-    }
+    const db = await createDbService()
 
-    // Get current user from database
-    const user = await dbService.getCurrentUser()
-    if (!user) {
+    // Ensure user exists in database
+    await db.getOrCreateUser({
+      email: user.email || '',
+      full_name: user.user_metadata?.full_name || undefined,
+      company_name: undefined
+    })
+
+    const dbUser = await db.getCurrentUser()
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
@@ -29,8 +28,8 @@ export async function GET(request: NextRequest) {
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    const weeklyData = await dbService.getWeeklyUsage(user.id, sevenDaysAgo)
-    
+    const weeklyData = await db.getWeeklyUsage(dbUser.id, sevenDaysAgo)
+
     // Calculate totals
     const totalEmails = weeklyData.reduce((sum, day) => sum + day.emails, 0)
     const totalLeads = weeklyData.reduce((sum, day) => sum + day.leads, 0)

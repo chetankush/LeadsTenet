@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { getSupabaseClient } from './supabase-client'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
 interface DomainDNSRecord {
   type: string
@@ -69,8 +69,6 @@ export class DomainService {
   async addUserDomain(request: AddDomainRequest): Promise<DomainOperationResult> {
     const { domainName, userId } = request
 
-    console.log(`Adding domain ${domainName} for user ${userId}`)
-
     try {
       // Validate domain format
       if (!this.isValidDomain(domainName)) {
@@ -80,7 +78,7 @@ export class DomainService {
         }
       }
 
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       // Check if user exists
       const { data: user, error: userError } = await supabase
@@ -164,7 +162,6 @@ export class DomainService {
         }
       }
 
-      console.log(`Domain ${domainName} added successfully`)
       return {
         success: true,
         domain: dbDomain,
@@ -184,10 +181,8 @@ export class DomainService {
    * Verify a domain
    */
   async verifyUserDomain(userId: string, domainId: string): Promise<VerifyDomainResult> {
-    console.log(`Verifying domain ${domainId} for user ${userId}`)
-
     try {
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       // Get domain from database
       const { data: domain, error: domainError } = await supabase
@@ -236,7 +231,7 @@ export class DomainService {
         }
       }
 
-      const verificationData = verifyResult.data!
+      const verificationData = verifyResult.data! as any
       const isVerified = verificationData.status === 'verified'
 
       // Update domain status
@@ -266,7 +261,6 @@ export class DomainService {
         }
       }
 
-      console.log(`Domain verification result: ${isVerified ? 'verified' : 'pending'}`)
       return {
         success: true,
         verified: isVerified,
@@ -288,7 +282,7 @@ export class DomainService {
    */
   async getUserDomains(userId: string): Promise<UserDomain[]> {
     try {
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       const { data: domains, error } = await supabase
         .from('user_domains')
@@ -313,10 +307,8 @@ export class DomainService {
    * Delete a domain
    */
   async removeUserDomain(userId: string, domainId: string): Promise<DomainOperationResult> {
-    console.log(`Removing domain ${domainId} for user ${userId}`)
-
     try {
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       // Get domain from database
       const { data: domain, error: domainError } = await supabase
@@ -357,7 +349,6 @@ export class DomainService {
         }
       }
 
-      console.log(`Domain ${domain.domain_name} removed successfully`)
       return {
         success: true
       }
@@ -375,10 +366,8 @@ export class DomainService {
    * Set a domain as default for a user
    */
   async setUserDefaultDomain(userId: string, domainId: string): Promise<DomainOperationResult> {
-    console.log(`Setting domain ${domainId} as default for user ${userId}`)
-
     try {
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       // Check if domain exists and is verified
       const { data: domain, error: domainError } = await supabase
@@ -418,7 +407,6 @@ export class DomainService {
         }
       }
 
-      console.log(`Domain ${domain.domain_name} set as default`)
       return {
         success: true,
         domain: updatedDomain
@@ -438,7 +426,7 @@ export class DomainService {
    */
   async getUserDefaultDomain(userId: string): Promise<UserDomain | null> {
     try {
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       const { data: domain } = await supabase
         .rpc('get_user_default_domain', { p_user_id: userId })
@@ -456,7 +444,7 @@ export class DomainService {
    */
   async getUserDomain(userId: string, domainId: string): Promise<UserDomain | null> {
     try {
-      const supabase = await getSupabaseClient()
+      const supabase = getSupabaseAdmin()
 
       const { data: domain, error } = await supabase
         .from('user_domains')

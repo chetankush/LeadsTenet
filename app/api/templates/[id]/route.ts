@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { createClient } from '@/utils/supabase/server'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
 /**
  * GET /api/templates/[id]
@@ -11,15 +11,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
     const templateId = params.id
 
-    const { data: template, error } = await supabase
+    const { data: template, error } = await db
       .from('email_templates')
       .select('*')
       .eq('id', templateId)
@@ -30,7 +31,7 @@ export async function GET(
     }
 
     // Increment usage count
-    await supabase.rpc('increment_template_usage', { template_id: templateId })
+    await db.rpc('increment_template_usage', { template_id: templateId })
 
     return NextResponse.json({
       success: true,
@@ -55,28 +56,29 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
     const templateId = params.id
     const body = await request.json()
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Check if template exists and user owns it
-    const { data: existingTemplate } = await supabase
+    const { data: existingTemplate } = await db
       .from('email_templates')
       .select('*')
       .eq('id', templateId)
@@ -93,7 +95,7 @@ export async function PUT(
       )
     }
 
-    if (existingTemplate.created_by !== user.id) {
+    if (existingTemplate.created_by !== dbUser.id) {
       return NextResponse.json(
         { error: 'Unauthorized to edit this template' },
         { status: 403 }
@@ -101,7 +103,7 @@ export async function PUT(
     }
 
     // Update template
-    const { data: updatedTemplate, error } = await supabase
+    const { data: updatedTemplate, error } = await db
       .from('email_templates')
       .update({
         name: body.name,
@@ -151,27 +153,28 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
     const templateId = params.id
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Check if template exists and user owns it
-    const { data: existingTemplate } = await supabase
+    const { data: existingTemplate } = await db
       .from('email_templates')
       .select('*')
       .eq('id', templateId)
@@ -188,7 +191,7 @@ export async function DELETE(
       )
     }
 
-    if (existingTemplate.created_by !== user.id) {
+    if (existingTemplate.created_by !== dbUser.id) {
       return NextResponse.json(
         { error: 'Unauthorized to delete this template' },
         { status: 403 }
@@ -196,7 +199,7 @@ export async function DELETE(
     }
 
     // Delete template
-    const { error } = await supabase
+    const { error } = await db
       .from('email_templates')
       .delete()
       .eq('id', templateId)

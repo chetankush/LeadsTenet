@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { getSupabaseClient } from '@/lib/supabase-client'
-import type { EmailTemplate, CreateTemplateData, MoodTag } from '@/lib/types/template'
+import { createClient } from '@/utils/supabase/server'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
+import type { CreateTemplateData, MoodTag } from '@/lib/types/template'
 
 /**
  * GET /api/templates
@@ -9,12 +9,13 @@ import type { EmailTemplate, CreateTemplateData, MoodTag } from '@/lib/types/tem
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
 
     // Get filter parameters
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const scenario = searchParams.get('scenario')
 
     // Build query
-    let query = supabase
+    let query = db
       .from('email_templates')
       .select('*')
       .eq('status', 'active')
@@ -80,21 +81,22 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
@@ -109,15 +111,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template
-    const { data: template, error } = await supabase
+    const { data: template, error } = await db
       .from('email_templates')
       .insert({
         name: body.name,
         description: body.description || null,
         content: body.content,
         subject_template: body.subject_template || null,
-        is_system: false, // Custom templates are never system templates
-        created_by: user.id,
+        is_system: false,
+        created_by: dbUser.id,
         mood_tags: body.mood_tags || [],
         custom_tags: body.custom_tags || [],
         scenario: body.scenario || 'Custom',

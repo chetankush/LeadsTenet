@@ -1,48 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 import { StripeService } from '@/lib/stripe-service'
-import { dbService } from '@/lib/database-service'
+import { createDbService } from '@/lib/database-service'
 
 export async function POST(request: NextRequest) {
   try {
     // TODO: Remove this when Stripe is configured
-    return NextResponse.json({ 
-      error: 'Billing system not configured yet. Please add Stripe API keys to enable subscriptions.' 
+    return NextResponse.json({
+      error: 'Billing system not configured yet. Please add Stripe API keys to enable subscriptions.'
     }, { status: 503 })
 
-    const { userId } = auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { priceId, planId } = await request.json()
 
     if (!priceId || !planId) {
-      return NextResponse.json({ 
-        error: 'Price ID and Plan ID are required' 
+      return NextResponse.json({
+        error: 'Price ID and Plan ID are required'
       }, { status: 400 })
     }
 
-    // Get current user
-    const user = await dbService.getCurrentUser()
-    if (!user) {
+    const db = await createDbService()
+    const dbUser = await db.getCurrentUser()
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Create Stripe customer if doesn't exist
-    let customerId = user.stripe_customer_id
+    let customerId = (dbUser as any).stripe_customer_id
 
     if (!customerId) {
       const customer = await StripeService.createCustomer({
-        email: user.email,
-        name: user.full_name || undefined,
-        userId: user.clerk_user_id
+        email: dbUser!.email,
+        name: dbUser!.full_name || undefined,
+        userId: dbUser!.auth_user_id
       })
 
       customerId = customer.id
 
-      // Update user with Stripe customer ID
-      await dbService.updateUser({
+      await db.updateUser({
         stripe_customer_id: customerId
       } as any)
     }
@@ -51,14 +51,14 @@ export async function POST(request: NextRequest) {
     const session = await StripeService.createCheckoutSession({
       priceId,
       customerId,
-      userId: user.clerk_user_id,
+      userId: dbUser!.auth_user_id,
       successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?canceled=true`
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       sessionId: session.id,
-      url: session.url 
+      url: session.url
     })
 
   } catch (error) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { dbService } from '@/lib/database-service'
+import { createClient } from '@/utils/supabase/server'
+import { createDbService } from '@/lib/database-service'
 import { processLeadsWithAI } from '@/lib/ai-service'
 import { emailService } from '@/lib/email-service'
 import type { LeadData, ChannelType } from '@/lib/ai-service'
@@ -11,45 +11,53 @@ interface ProcessCampaignRequest {
   channels?: ChannelType[]
   sendEmails?: boolean
   emailConfig?: EmailConfig
+  senderContext?: {
+    senderName?: string
+    senderRole?: string
+    companyName?: string
+    productDescription?: string
+    valueProposition?: string
+    tone?: 'friendly' | 'professional' | 'casual' | 'bold'
+    customInstructions?: string
+  }
 }
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 === PROCESSING CAMPAIGN API ROUTE ===')
-  
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const db = await createDbService()
     const body: ProcessCampaignRequest = await request.json()
-    const { campaignId, channels = ['email'], sendEmails = false, emailConfig } = body
-
-    console.log('📊 Request details:')
-    console.log('- Campaign ID:', campaignId)
-    console.log('- Channels requested:', channels)
-    console.log('- Send emails:', sendEmails)
-    console.log('- User ID:', userId)
+    const { campaignId, channels = ['email'], sendEmails = false, emailConfig, senderContext } = body
 
     // Get campaign and verify ownership
-    const campaign = await dbService.getCampaign(campaignId)
+    const campaign = await db.getCampaign(campaignId)
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
     // Get campaign leads
-    const leads = await dbService.getCampaignLeads(campaignId)
+    const leads = await db.getCampaignLeads(campaignId)
     if (leads.length === 0) {
       return NextResponse.json({ error: 'No leads found in campaign' }, { status: 400 })
     }
 
-    console.log('📋 Campaign details:')
-    console.log('- Campaign name:', campaign.name)
-    console.log('- Number of leads:', leads.length)
+    // Determine sender context: prefer request body, fall back to campaign description
+    let finalSenderContext = senderContext
+    if (!finalSenderContext && campaign.description) {
+      try {
+        const parsed = JSON.parse(campaign.description)
+        finalSenderContext = parsed.sender_context
+      } catch { /* not JSON, that's fine */ }
+    }
 
     // Check usage limits if sending emails
     if (sendEmails && channels.includes('email')) {
-      const usageLimit = await dbService.checkUsageLimit('email_sent')
+      const usageLimit = await db.checkUsageLimit('email_sent')
       if (usageLimit && !usageLimit.can_perform) {
         return NextResponse.json({
           error: 'Email limit exceeded for your subscription tier',
@@ -80,19 +88,13 @@ export async function POST(request: NextRequest) {
     }))
 
     // Step 1: Process leads with AI
-    console.log('🤖 Step 1: Processing leads with AI service...')
-    const aiResponse = await processLeadsWithAI(aiLeads, channels)
-    
-    console.log('🤖 AI Processing Results:')
-    console.log('- Success:', aiResponse.success)
-    console.log('- Total processed:', aiResponse.totalProcessed)
-    console.log('- Errors:', aiResponse.errors.length)
+    const aiResponse = await processLeadsWithAI(aiLeads, channels, finalSenderContext)
 
     if (!aiResponse.success || aiResponse.processedLeads.length === 0) {
-      console.error('❌ AI processing failed completely')
-      return NextResponse.json({ 
-        error: 'AI processing failed', 
-        details: aiResponse.errors 
+      console.error('AI processing failed completely')
+      return NextResponse.json({
+        error: 'AI processing failed',
+        details: aiResponse.errors
       }, { status: 500 })
     }
 
@@ -100,9 +102,9 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < aiResponse.processedLeads.length; i++) {
       const processedLead = aiResponse.processedLeads[i]
       const leadId = leads[i]?.id
-      
+
       if (leadId) {
-        await dbService.updateLead(leadId, {
+        await db.updateLead(leadId, {
           status: 'processed',
           ai_confidence: processedLead.confidence,
           processed_at: new Date().toISOString()
@@ -111,21 +113,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Record AI usage
-    await dbService.recordUsage('ai_processed', aiResponse.totalProcessed, campaignId)
+    await db.recordUsage('ai_processed', aiResponse.totalProcessed, campaignId)
 
     // Step 2: Send emails if requested
     let emailResults = null
     if (sendEmails && channels.includes('email')) {
-      console.log('📨 Step 2: Sending emails...')
-
       // Prepare email config
       const finalEmailConfig: EmailConfig = emailConfig || {
         fromEmail: campaign.from_email || 'onboarding@resend.dev',
         fromName: campaign.from_name || 'LeadGen AI Solutions',
-        replyTo: campaign.reply_to_email
+        replyTo: campaign.reply_to_email || undefined
       }
-
-      console.log('📨 Email configuration:', finalEmailConfig)
 
       // Prepare email requests
       const emailRequests = aiResponse.processedLeads
@@ -133,21 +131,14 @@ export async function POST(request: NextRequest) {
         .map((processed, index) => ({
           lead: {
             ...processed.originalLead,
-            id: leads[index]?.id // Add database lead ID
+            id: leads[index]?.id
           } as any,
           content: processed.channels.email!,
           config: finalEmailConfig
         }))
 
-      console.log('📨 Prepared email requests:', emailRequests.length)
-
       if (emailRequests.length > 0) {
         emailResults = await emailService.sendBulkEmails(emailRequests)
-        
-        console.log('📨 Email Sending Results:')
-        console.log('- Success:', emailResults.success)
-        console.log('- Total sent:', emailResults.totalSent)
-        console.log('- Total failed:', emailResults.totalFailed)
 
         // Log email results to database with full content
         for (let i = 0; i < emailResults.results.length; i++) {
@@ -155,39 +146,35 @@ export async function POST(request: NextRequest) {
           const leadData = leads.find(l => l.email === result.leadEmail)
 
           if (leadData) {
-            await dbService.createEmailLog({
+            await db.createEmailLog({
               lead_id: leadData.id,
               campaign_id: campaignId,
               subject: emailRequests[i].content.subject,
-              body_text: emailRequests[i].content.body, // Store full email body
+              body_text: emailRequests[i].content.body,
               from_email: finalEmailConfig.fromEmail,
               to_email: result.leadEmail,
               message_id: result.messageId,
-              status: result.success ? 'sent' : 'failed'
+              status: result.success ? 'sent' : 'bounced'
             })
 
             // Update lead status
-            await dbService.updateLead(leadData.id, {
-              status: result.success ? 'sent' : 'failed',
-              last_contacted_at: new Date().toISOString()
+            await db.updateLead(leadData.id, {
+              status: result.success ? 'sent' : 'failed'
             })
           }
         }
 
         // Record email usage
-        await dbService.recordUsage('email_sent', emailResults.totalSent, campaignId)
+        await db.recordUsage('email_sent', emailResults.totalSent, campaignId)
 
         // Update campaign status
-        await dbService.updateCampaign(campaignId, {
-          status: 'active',
-          last_sent_at: new Date().toISOString()
+        await db.updateCampaign(campaignId, {
+          status: 'active'
         })
       }
     }
 
     // Step 3: Return comprehensive response
-    console.log('✅ Campaign processing completed successfully!')
-    
     return NextResponse.json({
       success: true,
       aiResponse,
@@ -201,10 +188,10 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('💥 CRITICAL ERROR in process-campaign API:', error)
-    
-    return NextResponse.json({ 
-      error: 'Internal server error', 
+    console.error('CRITICAL ERROR in process-campaign API:', error)
+
+    return NextResponse.json({
+      error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }

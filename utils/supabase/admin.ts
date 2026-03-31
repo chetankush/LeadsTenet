@@ -1,18 +1,17 @@
 import { createClient } from "@supabase/supabase-js"
-import type { Database, Tables, TablesInsert } from '@/types/database.types';
 
-export function createAdminClient() {
-    const supabase = createClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    return supabase
+// Server-side Supabase client using service role key.
+// This bypasses RLS — only use in trusted server-side code.
+// Lazily initialized to avoid build-time errors when env vars are not set.
+// Note: Database types have empty Tables — using untyped client until types are regenerated.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _supabaseAdmin: any = null
+export function getSupabaseAdmin(): any {
+    if (!_supabaseAdmin) {
+        _supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+            process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        )
+    }
+    return _supabaseAdmin
 }
-
-// Note: supabaseAdmin uses the SERVICE_ROLE_KEY which you must only use in a secure server-side context
-// as it has admin privileges and overwrites RLS policies!
-export const supabaseAdmin = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);

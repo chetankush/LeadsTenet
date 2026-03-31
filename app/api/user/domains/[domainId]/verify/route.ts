@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 import { domainService } from '@/lib/domain-service'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
 interface RouteParams {
   params: {
@@ -15,9 +15,9 @@ interface RouteParams {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -25,14 +25,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get user from database
-    const supabase = await getSupabaseClient()
-    const { data: user, error: userError } = await supabase
+    const db = getSupabaseAdmin()
+    const { data: dbUser, error: userError } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (userError || !user) {
+    if (userError || !dbUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Verify domain
-    const result = await domainService.verifyUserDomain(user.id, params.domainId)
+    const result = await domainService.verifyUserDomain(dbUser.id, params.domainId)
 
     if (!result.success) {
       return NextResponse.json(

@@ -1,9 +1,9 @@
-import { getSupabaseClient } from './supabase-client'
-import { auth } from '@clerk/nextjs/server'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server'
 
 export interface User {
   id: string
-  clerk_user_id: string
+  auth_user_id: string
   email: string
   full_name: string | null
   company_name: string | null
@@ -70,55 +70,41 @@ export interface UsageLimit {
   can_perform: boolean
 }
 
+/**
+ * Creates a per-request DatabaseService using the authenticated Supabase server client.
+ * This respects RLS policies — no need to manually filter by user_id.
+ *
+ * IMPORTANT: Call this once per request. Do NOT cache the result across requests.
+ */
+export async function createDbService() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return new DatabaseService(supabase, user?.id ?? null)
+}
+
 export class DatabaseService {
-  private userId: string | null = null
-  private supabase: any = null
-  private initialized: boolean = false
-
-  constructor() {
-    // Don't initialize in constructor to avoid async issues during build
-  }
-
-  private async ensureInitialized() {
-    if (this.initialized) return
-
-    try {
-      this.supabase = await getSupabaseClient()
-      const { userId } = await auth()
-      this.userId = userId
-      this.initialized = true
-    } catch (error) {
-      console.warn('Database service initialization failed:', error)
-      this.initialized = true
-    }
-  }
+  constructor(
+    private supabase: SupabaseClient,
+    private authUserId: string | null
+  ) {}
 
   // User Management
   async getCurrentUser(): Promise<User | null> {
-    try {
-      await this.ensureInitialized()
-      if (!this.supabase || !this.userId) return null
+    if (!this.authUserId) return null
 
-      const { data, error } = await this.supabase
-        .from('users')
-        .select('*')
-        .eq('clerk_user_id', this.userId)
-        .single()
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', this.authUserId)
+      .single()
 
-      if (error) {
-        // User doesn't exist yet, this is normal for first login
-        if (error.code === 'PGRST116') {
-          return null
-        }
-        console.error('Error fetching user:', error)
-        return null
-      }
-
-      return data
-    } catch (error) {
-      console.error('Error in getCurrentUser:', error)
+    if (error) {
+      if (error.code === 'PGRST116') return null
+      console.error('Error fetching user:', error)
       return null
     }
+
+    return data
   }
 
   async getOrCreateUser(userData?: {
@@ -126,20 +112,11 @@ export class DatabaseService {
     full_name?: string
     company_name?: string
   }): Promise<User | null> {
-    try {
-      // First try to get existing user
-      let user = await this.getCurrentUser()
-      
-      // If user doesn't exist, create them
-      if (!user && userData) {
-        user = await this.createUser(userData)
-      }
-      
-      return user
-    } catch (error) {
-      console.error('Error in getOrCreateUser:', error)
-      return null
+    let user = await this.getCurrentUser()
+    if (!user && userData) {
+      user = await this.createUser(userData)
     }
+    return user
   }
 
   async createUser(userData: {
@@ -148,61 +125,49 @@ export class DatabaseService {
     company_name?: string
     subscription_tier?: 'free' | 'pro' | 'enterprise'
   }): Promise<User | null> {
-    try {
-      await this.ensureInitialized()
-      if (!this.supabase || !this.userId) return null
+    if (!this.authUserId) return null
 
-      const { data, error } = await this.supabase
-        .from('users')
-        .insert({
-          clerk_user_id: this.userId,
-          subscription_tier: 'free',
-          subscription_status: 'active',
-          emails_per_month: 100,
-          campaigns_limit: 5,
-          leads_per_upload: 500,
-          ...userData
-        })
-        .select()
-        .single()
+    const { data, error } = await this.supabase
+      .from('users')
+      .insert({
+        auth_user_id: this.authUserId,
+        subscription_tier: 'free',
+        subscription_status: 'active',
+        emails_per_month: 100,
+        campaigns_limit: 5,
+        leads_per_upload: 500,
+        ...userData
+      })
+      .select()
+      .single()
 
-      if (error) {
-        console.error('Error creating user:', error)
-        return null
-      }
-
-      return data
-    } catch (error) {
-      console.error('Error in createUser:', error)
+    if (error) {
+      console.error('Error creating user:', error)
       return null
     }
+
+    return data
   }
 
   async updateUser(updates: Partial<User>): Promise<User | null> {
-    try {
-      await this.ensureInitialized()
-      if (!this.supabase || !this.userId) return null
+    if (!this.authUserId) return null
 
-      const { data, error } = await this.supabase
-        .from('users')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('clerk_user_id', this.userId)
-        .select()
-        .single()
+    const { data, error } = await this.supabase
+      .from('users')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('auth_user_id', this.authUserId)
+      .select()
+      .single()
 
-      if (error) {
-        console.error('Error updating user:', error)
-        return null
-      }
-
-      return data
-    } catch (error) {
-      console.error('Error in updateUser:', error)
+    if (error) {
+      console.error('Error updating user:', error)
       return null
     }
+
+    return data
   }
 
   // Campaign Management
@@ -310,6 +275,10 @@ export class DatabaseService {
 
   // Lead Management
   async getCampaignLeads(campaignId: string): Promise<Lead[]> {
+    // Verify campaign ownership first
+    const campaign = await this.getCampaign(campaignId)
+    if (!campaign) return []
+
     const { data, error } = await this.supabase
       .from('leads')
       .select('*')
@@ -377,7 +346,7 @@ export class DatabaseService {
     message_id?: string
     status: EmailLog['status']
   }): Promise<EmailLog | null> {
-    const { data, error} = await this.supabase
+    const { data, error } = await this.supabase
       .from('email_logs')
       .insert(emailData)
       .select()
@@ -391,8 +360,11 @@ export class DatabaseService {
     return data
   }
 
-  // Get email logs for a campaign
   async getCampaignEmailLogs(campaignId: string): Promise<any[]> {
+    // Verify campaign ownership first
+    const campaign = await this.getCampaign(campaignId)
+    if (!campaign) return []
+
     const { data, error } = await this.supabase
       .from('email_logs')
       .select(`
@@ -416,7 +388,7 @@ export class DatabaseService {
 
   async updateEmailLogStatus(emailLogId: string, status: EmailLog['status'], errorMessage?: string): Promise<void> {
     const updates: any = { status }
-    
+
     if (status === 'delivered') updates.delivered_at = new Date().toISOString()
     if (status === 'opened') updates.opened_at = new Date().toISOString()
     if (status === 'clicked') updates.clicked_at = new Date().toISOString()
@@ -449,7 +421,6 @@ export class DatabaseService {
       return null
     }
 
-    // Get current usage count
     let startDate: string
     const now = new Date()
     if (period === 'monthly') {
@@ -511,7 +482,6 @@ export class DatabaseService {
     const user = await this.getCurrentUser()
     if (!user) return null
 
-    // Get campaign stats
     const { data: campaigns } = await this.supabase
       .from('campaigns')
       .select('*')
@@ -520,13 +490,11 @@ export class DatabaseService {
     const totalCampaigns = campaigns?.length || 0
     const activeCampaigns = campaigns?.filter((c: any) => c.status === 'active').length || 0
 
-    // Get total leads
     const { count: totalLeads } = await this.supabase
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .in('campaign_id', campaigns?.map((c: any) => c.id) || [])
 
-    // Get email stats
     const { count: totalEmails } = await this.supabase
       .from('email_logs')
       .select('*', { count: 'exact', head: true })
@@ -549,79 +517,59 @@ export class DatabaseService {
   }
 
   async getWeeklyUsage(userId: string, startDate: Date): Promise<Array<{name: string, emails: number, leads: number}>> {
-    try {
-      await this.ensureInitialized()
-      if (!this.supabase) return []
+    const endDate = new Date()
+    const days: Array<{date: string, name: string, emails: number, leads: number}> = []
 
-      // Get the last 7 days of data
-      const endDate = new Date()
-      const days: Array<{date: string, name: string, emails: number, leads: number}> = []
-
-      // Create array of last 7 days
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        days.push({
-          date: date.toISOString().split('T')[0], // YYYY-MM-DD format
-          name: date.toLocaleDateString('en-US', { weekday: 'short' }), // Mon, Tue, etc.
-          emails: 0,
-          leads: 0
-        })
-      }
-
-      // Get email usage data
-      const { data: emailData, error: emailError } = await this.supabase
-        .from('usage_logs')
-        .select('date, count')
-        .eq('user_id', userId)
-        .eq('action', 'email_sent')
-        .gte('date', startDate.toISOString().split('T')[0])
-        .lte('date', endDate.toISOString().split('T')[0])
-
-      if (emailError) {
-        console.error('Error fetching email usage:', emailError)
-      } else if (emailData) {
-        // Map email data to days
-        emailData.forEach((record: any) => {
-          const day = days.find(d => d.date === record.date)
-          if (day) {
-            day.emails += record.count || 0
-          }
-        })
-      }
-
-      // Get leads usage data
-      const { data: leadsData, error: leadsError } = await this.supabase
-        .from('usage_logs')
-        .select('date, count')
-        .eq('user_id', userId)
-        .eq('action', 'lead_uploaded')
-        .gte('date', startDate.toISOString().split('T')[0])
-        .lte('date', endDate.toISOString().split('T')[0])
-
-      if (leadsError) {
-        console.error('Error fetching leads usage:', leadsError)
-      } else if (leadsData) {
-        // Map leads data to days
-        leadsData.forEach((record: any) => {
-          const day = days.find(d => d.date === record.date)
-          if (day) {
-            day.leads += record.count || 0
-          }
-        })
-      }
-
-      // Return only name, emails, leads for chart
-      return days.map(day => ({
-        name: day.name,
-        emails: day.emails,
-        leads: day.leads
-      }))
-
-    } catch (error) {
-      console.error('Error in getWeeklyUsage:', error)
-      return []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      days.push({
+        date: date.toISOString().split('T')[0],
+        name: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        emails: 0,
+        leads: 0
+      })
     }
+
+    const { data: emailData, error: emailError } = await this.supabase
+      .from('usage_logs')
+      .select('date, count')
+      .eq('user_id', userId)
+      .eq('action', 'email_sent')
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+
+    if (emailError) {
+      console.error('Error fetching email usage:', emailError)
+    } else if (emailData) {
+      emailData.forEach((record: any) => {
+        const day = days.find(d => d.date === record.date)
+        if (day) day.emails += record.count || 0
+      })
+    }
+
+    const { data: leadsData, error: leadsError } = await this.supabase
+      .from('usage_logs')
+      .select('date, count')
+      .eq('user_id', userId)
+      .eq('action', 'lead_uploaded')
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+
+    if (leadsError) {
+      console.error('Error fetching leads usage:', leadsError)
+    } else if (leadsData) {
+      leadsData.forEach((record: any) => {
+        const day = days.find(d => d.date === record.date)
+        if (day) day.leads += record.count || 0
+      })
+    }
+
+    return days.map(day => ({
+      name: day.name,
+      emails: day.emails,
+      leads: day.leads
+    }))
   }
 
   // Campaign Performance
@@ -638,6 +586,47 @@ export class DatabaseService {
     }
 
     return data
+  }
+
+  // User Settings
+  async getUserSettings(): Promise<Record<string, any>> {
+    const user = await this.getCurrentUser()
+    if (!user) return {}
+
+    const { data, error } = await this.supabase
+      .from('users')
+      .select('settings')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user settings:', error)
+      return {}
+    }
+
+    return data?.settings || {}
+  }
+
+  async updateUserSettings(settings: Record<string, any>): Promise<Record<string, any> | null> {
+    const user = await this.getCurrentUser()
+    if (!user) return null
+
+    const { data, error } = await this.supabase
+      .from('users')
+      .update({
+        settings,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select('settings')
+      .single()
+
+    if (error) {
+      console.error('Error updating user settings:', error)
+      return null
+    }
+
+    return data?.settings || {}
   }
 
   // Subscription Management
@@ -660,10 +649,6 @@ export class DatabaseService {
     const user = await this.getCurrentUser()
     if (!user) return null
 
-    // TODO: Uncomment when Stripe is configured
-    // For now, just update the subscription tier without Stripe integration
-
-    // Get subscription limits
     const { data: planData } = await this.supabase
       .from('subscription_plans')
       .select('*')
@@ -679,22 +664,6 @@ export class DatabaseService {
       leads_per_upload: planData.leads_per_upload,
     }
 
-    // TODO: Enable when Stripe is configured
-    // if (stripeCustomerId) {
-    //   updates.stripe_customer_id = stripeCustomerId
-    // }
-
     return await this.updateUser(updates)
   }
 }
-
-// Export singleton instance
-export const dbService = new DatabaseService()
-
-// Helper functions
-export const getCurrentUser = () => dbService.getCurrentUser()
-export const getUserCampaigns = () => dbService.getUserCampaigns()
-export const createCampaign = (data: any) => dbService.createCampaign(data)
-export const checkUsageLimit = (action: string) => dbService.checkUsageLimit(action)
-export const recordUsage = (action: string, count?: number, campaignId?: string) => 
-  dbService.recordUsage(action, count, campaignId)

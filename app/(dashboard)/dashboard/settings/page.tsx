@@ -4,18 +4,28 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { 
-  Settings as SettingsIcon, 
-  Mail, 
-  Bell, 
-  Shield, 
+import {
+  Settings as SettingsIcon,
+  Mail,
+  Bell,
+  Shield,
   Palette,
   Save,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface SettingsData {
+  businessProfile: {
+    senderName: string
+    senderRole: string
+    companyName: string
+    productDescription: string
+    valueProposition: string
+    defaultTone: 'friendly' | 'professional' | 'casual' | 'bold'
+    customInstructions: string
+  }
   emailSettings: {
     defaultFromEmail: string
     defaultFromName: string
@@ -41,6 +51,15 @@ interface SettingsData {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>({
+    businessProfile: {
+      senderName: '',
+      senderRole: '',
+      companyName: '',
+      productDescription: '',
+      valueProposition: '',
+      defaultTone: 'friendly',
+      customInstructions: ''
+    },
     emailSettings: {
       defaultFromEmail: 'onboarding@resend.dev',
       defaultFromName: 'LeadsTeNet',
@@ -65,7 +84,32 @@ export default function SettingsPage() {
   })
   
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
+
+  useEffect(() => {
+    fetchSettings()
+  }, [])
+
+  const fetchSettings = async () => {
+    try {
+      setInitialLoading(true)
+      const response = await fetch('/api/user/settings')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.settings && Object.keys(data.settings).length > 0) {
+          setSettings(prev => ({
+            ...prev,
+            ...data.settings
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    } finally {
+      setInitialLoading(false)
+    }
+  }
 
   const handleInputChange = (section: keyof SettingsData, field: string, value: any) => {
     setSettings(prev => ({
@@ -81,9 +125,16 @@ export default function SettingsPage() {
   const handleSave = async () => {
     try {
       setLoading(true)
-      // In a real app, you'd call your API to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      
+      const response = await fetch('/api/user/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings')
+      }
+
       toast.success('Settings saved successfully!')
       setHasChanges(false)
     } catch (error) {
@@ -97,6 +148,15 @@ export default function SettingsPage() {
   const handleReset = () => {
     // Reset to default values
     setSettings({
+      businessProfile: {
+        senderName: '',
+        senderRole: '',
+        companyName: '',
+        productDescription: '',
+        valueProposition: '',
+        defaultTone: 'friendly',
+        customInstructions: ''
+      },
       emailSettings: {
         defaultFromEmail: 'onboarding@resend.dev',
         defaultFromName: 'LeadsTeNet',
@@ -144,6 +204,122 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Business Profile */}
+      <Card className="p-6">
+        <div className="flex items-center space-x-2 mb-1">
+          <Building2 className="h-5 w-5 text-gray-400" />
+          <h2 className="text-xl font-semibold text-gray-900">Business Profile</h2>
+        </div>
+        <p className="text-sm text-gray-600 mb-6 ml-7">
+          This information is used by AI to write personalized emails on your behalf. Fill this once and it applies to all campaigns.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Name
+            </label>
+            <input
+              type="text"
+              value={settings.businessProfile.senderName}
+              onChange={(e) => handleInputChange('businessProfile', 'senderName', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="John Doe"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Role
+            </label>
+            <input
+              type="text"
+              value={settings.businessProfile.senderRole}
+              onChange={(e) => handleInputChange('businessProfile', 'senderRole', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Founder, Sales Director"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Company Name
+            </label>
+            <input
+              type="text"
+              value={settings.businessProfile.companyName}
+              onChange={(e) => handleInputChange('businessProfile', 'companyName', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Acme Inc."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Default Tone
+            </label>
+            <select
+              value={settings.businessProfile.defaultTone}
+              onChange={(e) => handleInputChange('businessProfile', 'defaultTone', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="friendly">Friendly</option>
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            What do you offer?
+          </label>
+          <textarea
+            value={settings.businessProfile.productDescription}
+            onChange={(e) => handleInputChange('businessProfile', 'productDescription', e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. We help SaaS companies automate their outbound sales with AI-powered email campaigns."
+          />
+          <p className="text-sm text-gray-600 mt-1">
+            1-2 sentences about your product or service
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Key benefit for prospects
+          </label>
+          <textarea
+            value={settings.businessProfile.valueProposition}
+            onChange={(e) => handleInputChange('businessProfile', 'valueProposition', e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. Our clients typically see 3x more replies and save 10 hours per week on outreach."
+          />
+          <p className="text-sm text-gray-600 mt-1">
+            What makes prospects want to reply?
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Custom AI Instructions (optional)
+          </label>
+          <textarea
+            value={settings.businessProfile.customInstructions}
+            onChange={(e) => handleInputChange('businessProfile', 'customInstructions', e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g. Always mention our free trial. Never use the word 'innovative'. Reference the prospect's company size if available."
+          />
+          <p className="text-sm text-gray-600 mt-1">
+            Extra instructions the AI should follow when writing emails
+          </p>
+        </div>
+      </Card>
 
       {/* Email Settings */}
       <Card className="p-6">

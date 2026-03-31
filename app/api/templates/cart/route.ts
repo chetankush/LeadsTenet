@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { createClient } from '@/utils/supabase/server'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
 /**
  * GET /api/templates/cart
@@ -8,21 +8,22 @@ import { getSupabaseClient } from '@/lib/supabase-client'
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
@@ -31,13 +32,13 @@ export async function GET(request: NextRequest) {
     const folder = searchParams.get('folder')
 
     // Build query
-    let query = supabase
+    let query = db
       .from('user_template_cart')
       .select(`
         *,
         template:template_id (*)
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
       .order('added_at', { ascending: false })
 
     if (favoritesOnly) {
@@ -78,21 +79,22 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
@@ -107,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if template exists
-    const { data: template } = await supabase
+    const { data: template } = await db
       .from('email_templates')
       .select('id')
       .eq('id', template_id)
@@ -121,10 +123,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already in cart
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('user_template_cart')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
       .eq('template_id', template_id)
       .single()
 
@@ -136,10 +138,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to cart
-    const { data: cartItem, error } = await supabase
+    const { data: cartItem, error } = await db
       .from('user_template_cart')
       .insert({
-        user_id: user.id,
+        user_id: dbUser.id,
         template_id,
         folder_name: folder_name || null,
         is_favorite: is_favorite || false,

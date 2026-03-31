@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
-import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
 const geistSans = localFont({
@@ -15,8 +14,8 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'CodeGuide Starter Lite',
-  description: 'Starter kit from codeguide.dev',
+  title: 'LeadsTeNet - AI-Powered Cold Email Platform',
+  description: 'Upload Excel leads, generate AI-personalized emails, and send campaigns at scale.',
 }
 
 export default function RootLayout({
@@ -25,10 +24,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    </html>
   )
 }

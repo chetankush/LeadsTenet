@@ -1,11 +1,20 @@
 import { Card } from '@/components/ui/card'
-import { dbService } from '@/lib/database-service'
+import { createDbService } from '@/lib/database-service'
 import { Mail, Users, BarChart3, TrendingUp } from 'lucide-react'
 
 export async function DashboardStats() {
-  const stats = await dbService.getDashboardStats()
+  const db = await createDbService()
+  const stats = await db.getDashboardStats()
 
-  const statCards = [
+  const statCards: Array<{
+    title: string
+    value: number
+    icon: typeof Mail
+    color: string
+    bgColor: string
+    change: string
+    changeType: 'positive' | 'negative' | 'neutral'
+  }> = [
     {
       title: 'Total Campaigns',
       value: stats?.total_campaigns || 0,
@@ -13,7 +22,7 @@ export async function DashboardStats() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       change: '+12%',
-      changeType: 'positive' as const
+      changeType: 'positive'
     },
     {
       title: 'Total Leads',
@@ -22,7 +31,7 @@ export async function DashboardStats() {
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       change: '+5%',
-      changeType: 'positive' as const
+      changeType: 'positive'
     },
     {
       title: 'Emails This Month',
@@ -31,7 +40,7 @@ export async function DashboardStats() {
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
       change: `${stats?.email_limit ? Math.round((stats.emails_this_month / stats.email_limit) * 100) : 0}% of limit`,
-      changeType: 'neutral' as const
+      changeType: 'neutral'
     },
     {
       title: 'Active Campaigns',
@@ -40,7 +49,7 @@ export async function DashboardStats() {
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       change: '+8%',
-      changeType: 'positive' as const
+      changeType: 'positive'
     }
   ]
 

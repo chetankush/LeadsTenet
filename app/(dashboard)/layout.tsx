@@ -1,16 +1,17 @@
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { DashboardSidebar } from '@/components/dashboard/sidebar'
 import { DashboardHeader } from '@/components/dashboard/header'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { userId } = auth()
-  
-  if (!userId) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
     redirect('/sign-in')
   }
 
@@ -19,7 +20,7 @@ export default function DashboardLayout({
       <div className="flex">
         {/* Sidebar */}
         <DashboardSidebar />
-        
+
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-h-screen ml-64">
           <DashboardHeader />

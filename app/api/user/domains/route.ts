@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 import { domainService } from '@/lib/domain-service'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
 /**
  * GET /api/user/domains
@@ -9,9 +9,9 @@ import { getSupabaseClient } from '@/lib/supabase-client'
  */
 export async function GET() {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -19,14 +19,14 @@ export async function GET() {
     }
 
     // Get user from database
-    const supabase = await getSupabaseClient()
-    const { data: user, error: userError } = await supabase
+    const db = getSupabaseAdmin()
+    const { data: dbUser, error: userError } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (userError || !user) {
+    if (userError || !dbUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -34,7 +34,7 @@ export async function GET() {
     }
 
     // Get user domains
-    const domains = await domainService.getUserDomains(user.id)
+    const domains = await domainService.getUserDomains(dbUser.id)
 
     return NextResponse.json({
       success: true,
@@ -56,9 +56,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -76,14 +76,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user from database
-    const supabase = await getSupabaseClient()
-    const { data: user, error: userError } = await supabase
+    const db = getSupabaseAdmin()
+    const { data: dbUser, error: userError } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (userError || !user) {
+    if (userError || !dbUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     // Add domain
     const result = await domainService.addUserDomain({
       domainName: domain.toLowerCase().trim(),
-      userId: user.id
+      userId: dbUser.id
     })
 
     if (!result.success) {

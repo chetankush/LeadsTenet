@@ -61,7 +61,7 @@ export default function TemplatesPage() {
       const data = await response.json()
 
       if (data.success) {
-        const ids = new Set(data.cartItems.map((item: any) => item.template_id))
+        const ids = new Set<string>(data.cartItems.map((item: any) => item.template_id))
         setCartTemplateIds(ids)
       }
     } catch (error) {
@@ -81,7 +81,7 @@ export default function TemplatesPage() {
 
       if (data.success) {
         toast.success('Template added to cart!')
-        setCartTemplateIds(prev => new Set([...prev, template.id]))
+        setCartTemplateIds(prev => new Set([...Array.from(prev), template.id]))
       } else if (response.status === 409) {
         toast.info('Template already in your cart')
       } else {

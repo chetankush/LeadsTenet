@@ -35,17 +35,29 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true)
-      // For now, we'll fetch campaigns and calculate analytics
-      const response = await fetch('/api/campaigns')
-      
-      if (!response.ok) {
+
+      // Fetch campaigns and usage data in parallel
+      const [campaignsRes, usageRes] = await Promise.all([
+        fetch('/api/campaigns'),
+        fetch('/api/dashboard/usage')
+      ])
+
+      if (!campaignsRes.ok) {
         throw new Error('Failed to fetch analytics data')
       }
-      
-      const data = await response.json()
-      const campaigns = data.campaigns || []
 
-      // Calculate analytics from campaigns data
+      const campaignsData = await campaignsRes.json()
+      const campaigns = campaignsData.campaigns || []
+
+      let thisMonthEmails = 0
+      let thisMonthLeads = 0
+
+      if (usageRes.ok) {
+        const usageData = await usageRes.json()
+        thisMonthEmails = usageData.totals?.emails || 0
+        thisMonthLeads = usageData.totals?.leads || 0
+      }
+
       const analyticsData: AnalyticsData = {
         totalCampaigns: campaigns.length,
         totalLeads: campaigns.reduce((sum: number, c: any) => sum + (c.total_leads || 0), 0),
@@ -53,11 +65,10 @@ export default function AnalyticsPage() {
         totalEmailsDelivered: campaigns.reduce((sum: number, c: any) => sum + (c.emails_delivered || 0), 0),
         totalEmailsOpened: campaigns.reduce((sum: number, c: any) => sum + (c.emails_opened || 0), 0),
         averageOpenRate: 0,
-        thisMonthEmails: 0,
-        thisMonthLeads: 0
+        thisMonthEmails,
+        thisMonthLeads
       }
 
-      // Calculate average open rate
       if (analyticsData.totalEmailsDelivered > 0) {
         analyticsData.averageOpenRate = Math.round(
           (analyticsData.totalEmailsOpened / analyticsData.totalEmailsDelivered) * 100
@@ -219,11 +230,21 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
           </div>
           <div className="space-y-3">
-            <div className="text-sm text-gray-600">
-              Track your recent campaign activity and performance metrics here.
+            <div className="flex justify-between">
+              <span className="text-gray-600">Emails This Week</span>
+              <span className="font-semibold">{analytics?.thisMonthEmails || 0}</span>
             </div>
-            <div className="text-xs text-gray-500">
-              More detailed analytics coming soon...
+            <div className="flex justify-between">
+              <span className="text-gray-600">Leads This Week</span>
+              <span className="font-semibold">{analytics?.thisMonthLeads || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Delivery Rate</span>
+              <span className="font-semibold text-green-600">
+                {analytics?.totalEmailsSent
+                  ? Math.round(((analytics?.totalEmailsDelivered || 0) / analytics.totalEmailsSent) * 100)
+                  : 0}%
+              </span>
             </div>
           </div>
         </Card>

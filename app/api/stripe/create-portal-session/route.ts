@@ -1,36 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 import { StripeService } from '@/lib/stripe-service'
-import { dbService } from '@/lib/database-service'
+import { createDbService } from '@/lib/database-service'
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // TODO: Remove this when Stripe is configured
-    return NextResponse.json({ 
-      error: 'Billing portal not configured yet. Please add Stripe API keys.' 
+    return NextResponse.json({
+      error: 'Billing portal not configured yet. Please add Stripe API keys.'
     }, { status: 503 })
 
-    const { userId } = auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get current user
-    const user = await dbService.getCurrentUser()
-    if (!user || !user.stripe_customer_id) {
-      return NextResponse.json({ 
-        error: 'No billing account found' 
+    const db = await createDbService()
+    const dbUser = await db.getCurrentUser()
+    if (!dbUser || !(dbUser as any).stripe_customer_id) {
+      return NextResponse.json({
+        error: 'No billing account found'
       }, { status: 404 })
     }
 
     // Create portal session
     const session = await StripeService.createPortalSession({
-      customerId: user.stripe_customer_id,
+      customerId: (dbUser as any).stripe_customer_id,
       returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings`
     })
 
-    return NextResponse.json({ 
-      url: session.url 
+    return NextResponse.json({
+      url: session.url
     })
 
   } catch (error) {

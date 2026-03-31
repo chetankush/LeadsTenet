@@ -2,11 +2,12 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { dbService } from '@/lib/database-service'
+import { createDbService } from '@/lib/database-service'
 import { Mail, Users, Calendar } from 'lucide-react'
 
 export async function RecentCampaigns() {
-  const campaigns = await dbService.getUserCampaigns()
+  const db = await createDbService()
+  const campaigns = await db.getUserCampaigns()
   const recentCampaigns = campaigns.slice(0, 5) // Show last 5 campaigns
 
   const getStatusColor = (status: string) => {
@@ -52,10 +53,10 @@ export async function RecentCampaigns() {
                   <Mail className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <Link 
+                  <Link
                     href={`/dashboard/campaigns/${campaign.id}`}
                     className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate"
                   >
@@ -65,7 +66,7 @@ export async function RecentCampaigns() {
                     {campaign.status}
                   </Badge>
                 </div>
-                
+
                 <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
                   <div className="flex items-center">
                     <Users className="h-3 w-3 mr-1" />

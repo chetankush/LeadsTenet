@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { dbService } from '@/lib/database-service'
+import { createClient } from '@/utils/supabase/server'
+import { createDbService } from '@/lib/database-service'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const campaigns = await dbService.getUserCampaigns()
+    const db = await createDbService()
+    const campaigns = await db.getUserCampaigns()
     return NextResponse.json({ campaigns })
 
   } catch (error) {
@@ -23,23 +26,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user data from Clerk and ensure user exists in database
-    const clerkUser = await currentUser()
-    if (clerkUser) {
-      await dbService.getOrCreateUser({
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        full_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null,
-        company_name: null
-      })
-    }
+    const db = await createDbService()
+
+    // Ensure user exists in database
+    await db.getOrCreateUser({
+      email: user.email || '',
+      full_name: user.user_metadata?.full_name || undefined,
+      company_name: undefined
+    })
 
     const body = await request.json()
-    const { name, description, leads, domain_id, local_part, from_name, reply_to_email, template_id } = body
+    const { name, description, leads, domain_id, local_part, from_name, reply_to_email, template_id, sender_context } = body
 
     // Validate required fields
     if (!name) {
@@ -47,9 +50,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check usage limits
-    const usageLimit = await dbService.checkUsageLimit('campaign_created')
+    const usageLimit = await db.checkUsageLimit('campaign_created')
     if (usageLimit && !usageLimit.can_perform) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Campaign limit exceeded for your subscription tier',
         limit: usageLimit?.limit || 0,
         current: usageLimit?.current_count || 0
@@ -57,13 +60,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine from_email based on domain selection
-    let fromEmail = null
+    let fromEmail: string | undefined = undefined
     if (domain_id && local_part) {
-      // Import domain service to get domain details
       const { domainService } = await import('@/lib/domain-service')
-      const user = await dbService.getCurrentUser()
-      if (user) {
-        const domain = await domainService.getUserDomain(user.id, domain_id)
+      const dbUser = await db.getCurrentUser()
+      if (dbUser) {
+        const domain = await domainService.getUserDomain(dbUser.id, domain_id)
         if (domain && domain.status === 'verified') {
           fromEmail = domainService.getEmailFromAddress(domain, local_part)
         }
@@ -71,12 +73,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create campaign
-    const campaign = await dbService.createCampaign({
+    const campaign = await db.createCampaign({
       name,
-      description,
+      description: sender_context
+        ? JSON.stringify({ text: description || '', sender_context })
+        : description,
       from_email: fromEmail,
-      from_name: from_name || null,
-      reply_to_email: reply_to_email || null
+      from_name: from_name || undefined,
+      reply_to_email: reply_to_email || undefined
     })
 
     if (!campaign) {
@@ -84,45 +88,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Create leads if provided
-    let createdLeads = []
+    let createdLeads: any[] = []
     if (leads && leads.length > 0) {
-      // Check leads per upload limit
-      const user = await dbService.getCurrentUser()
-      if (user && user.leads_per_upload > 0 && leads.length > user.leads_per_upload) {
+      const dbUser = await db.getCurrentUser()
+      if (dbUser && dbUser.leads_per_upload > 0 && leads.length > dbUser.leads_per_upload) {
         return NextResponse.json({
-          error: `Too many leads. Your plan allows ${user.leads_per_upload} leads per upload.`,
-          limit: user.leads_per_upload,
+          error: `Too many leads. Your plan allows ${dbUser.leads_per_upload} leads per upload.`,
+          limit: dbUser.leads_per_upload,
           provided: leads.length
         }, { status: 403 })
       }
 
-      createdLeads = await dbService.createLeads(campaign.id, leads)
-      
-      // Record lead upload usage
+      createdLeads = await db.createLeads(campaign.id, leads)
+
       if (createdLeads.length > 0) {
-        await dbService.recordUsage('lead_uploaded', createdLeads.length, campaign.id)
+        await db.recordUsage('lead_uploaded', createdLeads.length, campaign.id)
       }
     }
 
     // Link template to campaign if provided
     if (template_id) {
       try {
-        const supabase = dbService.getSupabaseClient()
-        await supabase
-          .from('campaign_templates')
-          .insert({
-            campaign_id: campaign.id,
-            template_id: template_id,
-            variant_name: 'primary'
-          })
+        const adminDb = getSupabaseAdmin()
+        await adminDb.from('campaign_templates').insert({
+          campaign_id: campaign.id,
+          template_id: template_id,
+          variant_name: 'primary'
+        })
       } catch (error) {
         console.error('Error linking template to campaign:', error)
-        // Don't fail campaign creation if template linking fails
       }
     }
 
     // Record campaign creation usage
-    await dbService.recordUsage('campaign_created', 1, campaign.id)
+    await db.recordUsage('campaign_created', 1, campaign.id)
 
     return NextResponse.json({
       success: true,

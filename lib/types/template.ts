@@ -142,7 +142,7 @@ export function extractVariables(template: string): string[] {
     matches.push(match[1].trim())
   }
 
-  return [...new Set(matches)] // Remove duplicates
+  return Array.from(new Set(matches)) // Remove duplicates
 }
 
 // Replace variables in template

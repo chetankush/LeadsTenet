@@ -47,8 +47,6 @@ export class EmailService {
       throw new Error('RESEND_API_KEY environment variable is required')
     }
 
-    console.log('🔑 Email Service: Initializing with Resend API key:', apiKey.substring(0, 10) + '...')
-
     this.resend = new Resend(apiKey)
   }
 
@@ -57,8 +55,6 @@ export class EmailService {
    */
   sendEmail = async (request: SendEmailRequest): Promise<EmailResult> => {
     const { lead, content, config } = request
-
-    console.log(`Sending email to ${lead.name} (${lead.email})`)
 
     try {
       // Determine from address - use custom domain if specified
@@ -85,16 +81,10 @@ export class EmailService {
         from: fromAddress,
         to: [lead.email!],
         subject: content.subject,
-        html: this.formatEmailContent(content.body, lead),
+        html: this.formatEmailContent(content.body, lead, fromAddress),
         // Remove tags for now to match your working example
       }
       
-      console.log('📧 Email data prepared:', {
-        from: emailData.from,
-        to: emailData.to[0],
-        subject: emailData.subject
-      })
-
       const result = await this.resend.emails.send(emailData)
       
       if (result.error) {
@@ -107,7 +97,6 @@ export class EmailService {
         }
       }
 
-      console.log(`Email sent successfully to ${lead.email}, ID: ${result.data?.id}`)
       return {
         success: true,
         messageId: result.data?.id,
@@ -132,9 +121,6 @@ export class EmailService {
   sendBulkEmails = async (
     requests: SendEmailRequest[]
   ): Promise<BulkEmailResponse> => {
-    console.log(`=== BULK EMAIL SENDING ===`)
-    console.log(`Sending ${requests.length} emails with ${this.rateLimitDelay}ms delay`)
-
     const results: EmailResult[] = []
     const errors: string[] = []
     let totalSent = 0
@@ -143,7 +129,6 @@ export class EmailService {
     try {
       for (let i = 0; i < requests.length; i++) {
         const request = requests[i]
-        console.log(`Processing email ${i + 1}/${requests.length} for ${request.lead.name}`)
 
         try {
           const result = await this.sendEmail(request)
@@ -160,7 +145,6 @@ export class EmailService {
 
           // Rate limiting delay (except for last email)
           if (i < requests.length - 1) {
-            console.log(`Waiting ${this.rateLimitDelay}ms before next email...`)
             await this.delay(this.rateLimitDelay)
           }
 
@@ -177,12 +161,6 @@ export class EmailService {
           })
         }
       }
-
-      console.log(`Bulk email sending completed:`, {
-        totalSent,
-        totalFailed,
-        errors: errors.length
-      })
 
       return {
         success: totalSent > 0,
@@ -207,7 +185,7 @@ export class EmailService {
   /**
    * Format email content with proper HTML structure
    */
-  private formatEmailContent = (body: string, lead: LeadData): string => {
+  private formatEmailContent = (body: string, lead: LeadData, fromEmail?: string): string => {
     // Convert newlines to HTML breaks and add basic styling
     const formattedBody = body
       .replace(/\n\n/g, '</p><p>')
@@ -226,10 +204,11 @@ export class EmailService {
     <p>${formattedBody}</p>
     
     <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-    
-    <div style="font-size: 12px; color: #666; text-align: center;">
-      <p>You're receiving this email because we found your contact information in our lead database.</p>
-      <p>If you don't want to receive these emails, please <a href="#" style="color: #666;">unsubscribe here</a>.</p>
+
+    <div style="font-size: 12px; color: #999; text-align: center;">
+      <p>This email was sent by LeadsTeNet on behalf of a verified sender.</p>
+      <p>If you no longer wish to receive these emails, please reply with "unsubscribe" or <a href="mailto:${fromEmail || 'noreply@resend.dev'}?subject=Unsubscribe&body=Please%20remove%20me%20from%20your%20mailing%20list" style="color: #999; text-decoration: underline;">click here to unsubscribe</a>.</p>
+      <p style="margin-top: 10px; font-size: 11px;">This message complies with the CAN-SPAM Act of 2003.</p>
     </div>
   </div>
 </body>
@@ -259,8 +238,6 @@ export class EmailService {
   testConnection = async (): Promise<boolean> => {
     try {
       // Test with a simple API call to check if credentials work
-      console.log('Testing email service connection...')
-      
       const testResult = await this.resend.emails.send({
         from: 'test@resend.dev',
         to: ['test@example.com'],
@@ -270,7 +247,6 @@ export class EmailService {
       
       // Even if the test email fails due to invalid addresses,
       // a successful API response means the service is connected
-      console.log('Email service connection test completed')
       return true
       
     } catch (error) {
@@ -318,7 +294,6 @@ export class EmailService {
    */
   setRateLimitDelay = (ms: number): void => {
     this.rateLimitDelay = ms
-    console.log(`Rate limit delay set to ${ms}ms`)
   }
 }
 

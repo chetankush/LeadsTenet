@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 import { aiService } from '@/lib/ai-service'
 import type { LeadData } from '@/lib/ai-service'
 
@@ -9,9 +9,9 @@ import type { LeadData } from '@/lib/ai-service'
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
-
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       industry: 'Technology'
     }
 
-    console.log('🎨 Generating sample email for preview:', sampleLead.name)
+    console.log('Generating sample email for preview:', sampleLead.name)
 
     // Generate personalized content using AI
     const result = await aiService.generatePersonalizedContent(
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const emailContent = result.channels.email
 
-    console.log('✅ Sample email generated successfully')
+    console.log('Sample email generated successfully')
     console.log('Subject:', emailContent.subject)
 
     return NextResponse.json({

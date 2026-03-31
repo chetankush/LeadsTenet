@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 
 interface LeadData {
   name?: string
@@ -39,57 +39,66 @@ interface AIServiceResponse {
 
 type ChannelType = 'email' | 'linkedin' | 'twitter'
 
+interface SenderContext {
+  senderName?: string
+  senderRole?: string
+  companyName?: string
+  productDescription?: string
+  valueProposition?: string
+  tone?: 'friendly' | 'professional' | 'casual' | 'bold'
+  customInstructions?: string
+}
+
 /**
  * AI Service for personalizing content based on lead data
- * Uses Gemini AI for multi-channel content generation
+ * Uses OpenRouter for multi-model access via OpenAI-compatible API
  */
 export class AIService {
-  private gemini: GoogleGenerativeAI
-  private model: any
+  private _client: OpenAI | null = null
+  private model: string = ''
+
+  private getClient(): OpenAI {
+    if (!this._client) {
+      const apiKey = process.env.OPENROUTER_API_KEY
+      if (!apiKey) {
+        throw new Error('OPENROUTER_API_KEY is required')
+      }
+      this._client = new OpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey,
+      })
+      this.model = process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-001'
+    }
+    return this._client
+  }
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is required')
-    }
-    
-    this.gemini = new GoogleGenerativeAI(apiKey)
-    this.model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    // Lazy initialization - client is created on first use
   }
 
   /**
    * Process multiple leads and generate personalized content for specified channels
    */
   processLeads = async (
-    leads: LeadData[], 
-    channels: ChannelType[] = ['email']
+    leads: LeadData[],
+    channels: ChannelType[] = ['email'],
+    senderContext?: SenderContext
   ): Promise<AIServiceResponse> => {
-    console.log('=== AI SERVICE PROCESSING ===')
-    console.log('Number of leads received:', leads.length)
-    console.log('Channels requested:', channels)
-    console.log('Sample lead data:', leads[0])
-
     const processedLeads: ProcessedLead[] = []
     const errors: string[] = []
 
     try {
       for (let i = 0; i < leads.length; i++) {
         const lead = leads[i]
-        console.log(`Processing lead ${i + 1}/${leads.length}:`, lead.name)
 
         try {
-          const processedLead = await this.generatePersonalizedContent(lead, i.toString(), channels)
+          const processedLead = await this.generatePersonalizedContent(lead, i.toString(), channels, senderContext)
           processedLeads.push(processedLead)
         } catch (error) {
           console.error(`Error processing lead ${i + 1}:`, error)
           errors.push(`Failed to process lead ${i + 1}: ${lead.name || 'Unknown'}`)
         }
       }
-
-      console.log('AI Processing completed:', {
-        totalProcessed: processedLeads.length,
-        errors: errors.length
-      })
 
       return {
         success: true,
@@ -113,18 +122,17 @@ export class AIService {
    * Generate personalized content for a single lead across multiple channels
    */
   generatePersonalizedContent = async (
-    lead: LeadData, 
-    leadId: string, 
-    channels: ChannelType[]
+    lead: LeadData,
+    leadId: string,
+    channels: ChannelType[],
+    senderContext?: SenderContext
   ): Promise<ProcessedLead> => {
-    console.log('Generating personalized content for:', lead.name, 'at', lead.company)
-    
     const availableFields = this.extractAvailableFields(lead)
     const channelContent: ChannelContent = {}
 
     for (const channel of channels) {
       try {
-        const content = await this.generateChannelContent(lead, channel, availableFields)
+        const content = await this.generateChannelContent(lead, channel, availableFields, senderContext)
         channelContent[channel] = content
       } catch (error) {
         console.error(`Error generating ${channel} content for ${lead.name}:`, error)
@@ -140,7 +148,6 @@ export class AIService {
       availableFields
     }
 
-    console.log('Generated content for', lead.name, '- Channels:', Object.keys(channelContent))
     return result
   }
 
@@ -148,153 +155,130 @@ export class AIService {
    * Generate content for a specific channel
    */
   private generateChannelContent = async (
-    lead: LeadData, 
-    channel: ChannelType, 
-    availableFields: string[]
+    lead: LeadData,
+    channel: ChannelType,
+    availableFields: string[],
+    senderContext?: SenderContext
   ): Promise<PersonalizedContent> => {
-    const prompt = this.createChannelPrompt(lead, channel, availableFields)
-    
-    console.log(`🤖 Generating ${channel} content for ${lead.name} at ${lead.company}`)
-    console.log(`📝 Available fields: ${availableFields.join(', ')}`)
-    console.log(`💭 Prompt being sent to Gemini:`)
-    console.log('---PROMPT START---')
-    console.log(prompt)
-    console.log('---PROMPT END---')
-    
+    const prompt = this.createChannelPrompt(lead, channel, availableFields, senderContext)
+
     try {
-      console.log('🔄 Calling Gemini API...')
-      const result = await this.model.generateContent(prompt)
-      const response = await result.response
-      const text = response.text()
-      
-      console.log(`✅ Gemini response received for ${lead.name}:`)
-      console.log('---RESPONSE START---')
-      console.log(text)
-      console.log('---RESPONSE END---')
-      
+      const completion = await this.getClient().chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert cold email copywriter. You write genuine, human-sounding outreach messages. Always respond with valid JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      })
+
+      const text = completion.choices[0]?.message?.content || ''
+
       const parsedContent = this.parseAIResponse(text, channel)
-      
-      console.log(`📧 Parsed content for ${lead.name}:`)
-      console.log('- Subject:', parsedContent.subject)
-      console.log('- Body length:', parsedContent.body.length)
-      console.log('- Tone:', parsedContent.tone)
-      console.log('- Body preview:', parsedContent.body.substring(0, 150) + '...')
-      
+
       return parsedContent
     } catch (error) {
-      console.error(`❌ Gemini API error for ${channel} (${lead.name}):`, error)
-      console.log('🔄 Using fallback content...')
-      return this.createFallbackContent(lead, channel)
+      console.error(`OpenRouter API error for ${channel} (${lead.name}):`, error)
+      return this.createFallbackContent(lead, channel, senderContext)
     }
   }
 
   /**
    * Create channel-specific prompts
    */
-  private createChannelPrompt = (lead: LeadData, channel: ChannelType, availableFields: string[]): string => {
-    // Extract additional fields dynamically
+  private createChannelPrompt = (lead: LeadData, channel: ChannelType, availableFields: string[], senderContext?: SenderContext): string => {
     const additionalInfo = availableFields
       .filter(field => !['name', 'email', 'company', 'industry'].includes(field))
       .map(field => `- ${field}: ${lead[field]}`)
       .join('\n')
 
-    const baseInfo = `
-Lead Information:
+    const tone = senderContext?.tone || 'friendly'
+    const toneDescriptions: Record<string, string> = {
+      friendly: 'Warm and approachable, like a helpful colleague. Use contractions, casual phrasing.',
+      professional: 'Polished and business-like, but still human. Confident without being stiff.',
+      casual: 'Very relaxed and conversational, like texting a work friend. Short sentences, informal.',
+      bold: 'Direct and confident. Get straight to the point. No fluff, just value.'
+    }
+
+    const senderInfo = senderContext ? `
+SENDER CONTEXT (This is who you are writing as):
+- Your Name: ${senderContext.senderName || 'not provided'}
+- Your Role: ${senderContext.senderRole || 'not provided'}
+- Your Company: ${senderContext.companyName || 'not provided'}
+- What You Offer: ${senderContext.productDescription || 'not provided'}
+- Key Benefit: ${senderContext.valueProposition || 'not provided'}` : ''
+
+    const customInstructions = senderContext?.customInstructions
+      ? `\nCUSTOM INSTRUCTIONS FROM SENDER:\n${senderContext.customInstructions}`
+      : ''
+
+    const channelPrompts: Record<ChannelType, string> = {
+      email: `Write a personalized cold email from the sender to this prospect.
+
+PROSPECT INFORMATION:
 - Name: ${lead.name}
 - Company: ${lead.company}
 - Industry: ${lead.industry}
 - Email: ${lead.email}
 ${additionalInfo ? additionalInfo : ''}
+${senderInfo}
 
-Context: You are a real person reaching out to connect with someone in the ${lead.industry} industry.`
+TONE: ${tone} - ${toneDescriptions[tone]}
+${customInstructions}
 
-    const channelPrompts = {
-      email: `Write a warm, friendly email to this person.${baseInfo}
+RULES:
+- Sound like a real human, not AI or marketing software
+- Use natural language with contractions
+- Be specific to "${lead.company}" in the "${lead.industry}" industry
+- Reference the sender's product/service naturally (do NOT pitch aggressively)
+- Keep it 60-80 words MAX
+- Sign off with the sender's real name and role
 
-CRITICAL - SOUND HUMAN, NOT AI:
-- Write like a real person having a genuine conversation
-- Use natural language - contractions (I'm, you're, we've), casual phrases
-- NO corporate jargon or buzzwords (leverage, synergy, cutting-edge, revolutionary)
-- NO AI phrases like "I hope this email finds you well" or "I'd love to pick your brain"
-- Start directly - skip formal openings, just say hi naturally
-- Be specific to THEIR company "${lead.company}" and industry "${lead.industry}"
-- Sound curious and interested, not salesy
-- Use short sentences - mix lengths for natural rhythm
-- One simple idea per paragraph
-- Keep it 60-80 words MAX (very short!)
+STRUCTURE:
+1. Short greeting using prospect's first name
+2. One specific observation about their company or industry
+3. Brief, natural mention of how the sender helps (tied to their product description)
+4. Low-pressure question or invitation
+5. Sender's name and role as sign-off
 
-TONE GUIDELINES:
-- Friendly colleague, not salesperson
-- Conversational, like texting a work friend
-- Helpful and genuine, not pushy
-- Show real interest in their work
-- Natural enthusiasm, not fake excitement
+AVOID: "I hope this finds you well", "Reaching out to...", "I'd love to pick your brain", any template-sounding phrases, multiple exclamation marks, marketing speak.
 
-STRUCTURE (Keep super simple):
-1. Quick friendly greeting with their first name only
-2. One genuine observation about their company/industry (be specific!)
-3. Brief mention of how you help (1 sentence, natural language)
-4. Simple, low-pressure question or invitation to chat
-5. Just your first name and title (no company pitch)
-
-AVOID AT ALL COSTS:
-- "I hope this email finds you well"
-- "I'd love to pick your brain"
-- "Reaching out to..."
-- "I wanted to touch base"
-- "I came across your profile"
-- "Thought I'd reach out"
-- Any template-sounding phrases
-- Multiple exclamation marks!!!
-- Marketing speak
-
-GOOD EXAMPLES OF NATURAL OPENINGS:
-- "Hi [Name],"
-- "Hey [Name],"
-- "[Name] - quick question"
-
-Return ONLY JSON format:
+Return ONLY valid JSON:
 {
-  "subject": "...",
-  "body": "...",
-  "tone": "friendly",
-  "callToAction": "..."
+  "subject": "short, curiosity-driven subject line",
+  "body": "the email body",
+  "tone": "${tone}",
+  "callToAction": "the closing question or invitation"
 }`,
 
-      linkedin: `Write a short, friendly LinkedIn connection message to this person.${baseInfo}
+      linkedin: `Write a short LinkedIn connection message.
 
-REQUIREMENTS:
-- Sound like a real person, not AI or marketing
-- Very casual and genuine
-- Mention their company "${lead.company}" specifically
-- Keep under 60 words
-- No corporate speak
-- Friendly, curious tone
+PROSPECT: ${lead.name} at ${lead.company} (${lead.industry})
+${additionalInfo ? additionalInfo : ''}
+${senderInfo}
 
-Return JSON format:
-{
-  "subject": "...",
-  "body": "...",
-  "tone": "friendly",
-  "callToAction": "..."
-}`,
+Keep under 60 words. Be ${tone}. Mention their company specifically. Reference what you offer naturally.
+${customInstructions}
 
-      twitter: `Write a casual, friendly Twitter DM to this person.${baseInfo}
+Return ONLY valid JSON: { "subject": "...", "body": "...", "tone": "${tone}", "callToAction": "..." }`,
 
-REQUIREMENTS:
-- Super casual, like texting
-- Reference their industry "${lead.industry}"
-- Very brief - under 40 words
-- Natural and conversational
-- No marketing language
+      twitter: `Write a casual Twitter DM.
 
-Return JSON format:
-{
-  "subject": "...",
-  "body": "...",
-  "tone": "casual",
-  "callToAction": "..."
-}`
+PROSPECT: ${lead.name}, ${lead.industry} industry
+${additionalInfo ? additionalInfo : ''}
+${senderInfo}
+
+Under 40 words. Very ${tone}. Reference their industry.
+${customInstructions}
+
+Return ONLY valid JSON: { "subject": "...", "body": "...", "tone": "${tone}", "callToAction": "..." }`
     }
 
     return channelPrompts[channel]
@@ -319,7 +303,7 @@ Return JSON format:
     } catch (error) {
       console.error('Error parsing AI response:', error)
     }
-    
+
     // Fallback if JSON parsing fails
     return {
       subject: `Personalized ${channel} message`,
@@ -333,10 +317,10 @@ Return JSON format:
    * Extract available fields from lead data
    */
   private extractAvailableFields = (lead: LeadData): string[] => {
-    return Object.keys(lead).filter(key => 
-      lead[key] && 
-      lead[key].toString().trim() !== '' && 
-      lead[key] !== 'undefined' && 
+    return Object.keys(lead).filter(key =>
+      lead[key] &&
+      lead[key].toString().trim() !== '' &&
+      lead[key] !== 'undefined' &&
       lead[key] !== null
     )
   }
@@ -347,47 +331,50 @@ Return JSON format:
   private calculateConfidence = (availableFields: string[]): number => {
     const requiredFields = ['name', 'email']
     const desiredFields = ['company', 'industry']
-    
+
     let confidence = 50 // Base confidence
-    
+
     // Add points for required fields
     requiredFields.forEach(field => {
       if (availableFields.includes(field)) confidence += 15
     })
-    
+
     // Add points for desired fields
     desiredFields.forEach(field => {
       if (availableFields.includes(field)) confidence += 10
     })
-    
+
     // Add points for additional fields
     const extraFields = availableFields.length - requiredFields.length - desiredFields.length
     confidence += Math.min(extraFields * 2, 10)
-    
+
     return Math.min(confidence, 95)
   }
 
   /**
    * Create fallback content when AI fails
    */
-  private createFallbackContent = (lead: LeadData, channel: ChannelType): PersonalizedContent => {
+  private createFallbackContent = (lead: LeadData, channel: ChannelType, senderContext?: SenderContext): PersonalizedContent => {
     const firstName = lead.name?.split(' ')[0] || lead.name
+    const senderName = senderContext?.senderName?.split(' ')[0] || 'The Team'
+    const senderRole = senderContext?.senderRole || 'Business Development'
+    const senderCompany = senderContext?.companyName || 'LeadsTeNet'
 
-    const fallbackTemplates = {
+    const fallbackTemplates: Record<ChannelType, PersonalizedContent> = {
       email: {
         subject: `Quick question about ${lead.company}`,
-        body: `Hi ${firstName},\n\nI've been looking at companies in ${lead.industry} and came across ${lead.company}. We've helped a few teams in your space save time on lead gen and outreach.\n\nWould it make sense to chat for 10 minutes? No pressure - just thought it might be useful.\n\nBest,\nSarah\nBusiness Development, LeadGen AI`,
-        tone: 'friendly',
+        body: `Hi ${firstName},\n\nI've been looking at companies in ${lead.industry} and came across ${lead.company}. We've helped a few teams in your space save time on lead gen and outreach.\n\nWould it make sense to chat for 10 minutes? No pressure.\n\nBest,\n${senderName}\n${senderRole}, ${senderCompany}`,
+        tone: senderContext?.tone || 'friendly',
         callToAction: 'Would it make sense to chat for 10 minutes?'
       },
       linkedin: {
-        subject: `Connection request`,
+        subject: 'Connection request',
         body: `Hi ${firstName}, noticed you're at ${lead.company || 'a company'} in ${lead.industry}. We work with similar teams - would be great to connect!`,
         tone: 'friendly',
         callToAction: 'Would be great to connect!'
       },
       twitter: {
-        subject: `Quick question`,
+        subject: 'Quick question',
         body: `Hey ${firstName}! Saw you're working in ${lead.industry}. We help teams like yours with lead gen - mind if I share some ideas?`,
         tone: 'casual',
         callToAction: 'Mind if I share some ideas?'
@@ -418,18 +405,19 @@ export const aiService = new AIService()
 
 // Helper functions for quick access
 export const processLeadsWithAI = async (
-  leads: LeadData[], 
-  channels: ChannelType[] = ['email']
+  leads: LeadData[],
+  channels: ChannelType[] = ['email'],
+  senderContext?: SenderContext
 ): Promise<AIServiceResponse> => {
-  return await aiService.processLeads(leads, channels)
+  return await aiService.processLeads(leads, channels, senderContext)
 }
 
 export const generateSingleLeadContent = async (
-  lead: LeadData, 
+  lead: LeadData,
   channels: ChannelType[] = ['email']
 ): Promise<ProcessedLead> => {
   return await aiService.generatePersonalizedContent(lead, '0', channels)
 }
 
 // Export types for use in other files
-export type { LeadData, PersonalizedContent, ChannelContent, ProcessedLead, AIServiceResponse, ChannelType }
+export type { LeadData, PersonalizedContent, ChannelContent, ProcessedLead, AIServiceResponse, ChannelType, SenderContext }

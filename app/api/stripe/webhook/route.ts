@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { StripeService } from '@/lib/stripe-service'
-import { dbService } from '@/lib/database-service'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 import Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  console.log('🔔 Stripe webhook received:', event.type)
+  console.log('Stripe webhook received:', event.type)
 
   try {
     switch (event.type) {
@@ -75,45 +75,41 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  console.log('✅ Checkout session completed:', session.id)
-  
+  console.log('Checkout session completed:', session.id)
+
   const userId = session.client_reference_id || session.metadata?.userId
   if (!userId) {
     console.error('No user ID found in session')
     return
   }
 
-  // Get the subscription
   if (session.subscription) {
-    const subscription = await StripeService.getCustomer(session.customer as string)
     console.log('User subscribed successfully:', userId)
   }
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  console.log('🆕 Subscription created:', subscription.id)
-  
+  console.log('Subscription created:', subscription.id)
+
   const customerId = subscription.customer as string
   const customer = await StripeService.getCustomer(customerId)
-  
+
   if (customer && !customer.deleted) {
     const userId = customer.metadata.userId
     if (userId) {
-      // Get plan details from price ID
       const priceId = subscription.items.data[0].price.id
       const plan = StripeService.getPlanByPriceId(priceId)
-      
+
       if (plan) {
-        // Update user subscription in database
-        const tempDbService = new (require('@/lib/database-service').DatabaseService)()
-        const user = await tempDbService.supabase
+        const supabase = getSupabaseAdmin()
+        const { data: user } = await supabase
           .from('users')
           .select('*')
-          .eq('clerk_user_id', userId)
+          .eq('auth_user_id', userId)
           .single()
 
-        if (user.data) {
-          await tempDbService.supabase
+        if (user) {
+          await supabase
             .from('users')
             .update({
               subscription_tier: plan.id,
@@ -124,7 +120,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
               stripe_customer_id: customerId,
               updated_at: new Date().toISOString()
             })
-            .eq('clerk_user_id', userId)
+            .eq('auth_user_id', userId)
 
           console.log(`Updated user ${userId} to ${plan.name} plan`)
         }
@@ -134,21 +130,20 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  console.log('🔄 Subscription updated:', subscription.id)
-  
+  console.log('Subscription updated:', subscription.id)
+
   const customerId = subscription.customer as string
   const customer = await StripeService.getCustomer(customerId)
-  
+
   if (customer && !customer.deleted) {
     const userId = customer.metadata.userId
     if (userId) {
-      // Get plan details from price ID
       const priceId = subscription.items.data[0].price.id
       const plan = StripeService.getPlanByPriceId(priceId)
-      
+
       if (plan) {
-        const tempDbService = new (require('@/lib/database-service').DatabaseService)()
-        await tempDbService.supabase
+        const supabase = getSupabaseAdmin()
+        await supabase
           .from('users')
           .update({
             subscription_tier: plan.id,
@@ -158,7 +153,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             leads_per_upload: plan.limits.leads_per_upload,
             updated_at: new Date().toISOString()
           })
-          .eq('clerk_user_id', userId)
+          .eq('auth_user_id', userId)
 
         console.log(`Updated user ${userId} subscription to ${plan.name}`)
       }
@@ -167,19 +162,18 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  console.log('❌ Subscription deleted:', subscription.id)
-  
+  console.log('Subscription deleted:', subscription.id)
+
   const customerId = subscription.customer as string
   const customer = await StripeService.getCustomer(customerId)
-  
+
   if (customer && !customer.deleted) {
     const userId = customer.metadata.userId
     if (userId) {
-      // Downgrade to free plan
       const freePlan = StripeService.getPlanById('free')
-      
-      const tempDbService = new (require('@/lib/database-service').DatabaseService)()
-      await tempDbService.supabase
+
+      const supabase = getSupabaseAdmin()
+      await supabase
         .from('users')
         .update({
           subscription_tier: 'free',
@@ -189,7 +183,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
           leads_per_upload: freePlan.limits.leads_per_upload,
           updated_at: new Date().toISOString()
         })
-        .eq('clerk_user_id', userId)
+        .eq('auth_user_id', userId)
 
       console.log(`Downgraded user ${userId} to free plan`)
     }
@@ -197,28 +191,26 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  console.log('💳 Payment succeeded for invoice:', invoice.id)
-  // Update payment status, send confirmation email, etc.
+  console.log('Payment succeeded for invoice:', invoice.id)
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  console.log('❌ Payment failed for invoice:', invoice.id)
-  // Handle failed payment, send notification, etc.
-  
+  console.log('Payment failed for invoice:', invoice.id)
+
   const customerId = invoice.customer as string
   const customer = await StripeService.getCustomer(customerId)
-  
+
   if (customer && !customer.deleted) {
     const userId = customer.metadata.userId
     if (userId) {
-      const tempDbService = new (require('@/lib/database-service').DatabaseService)()
-      await tempDbService.supabase
+      const supabase = getSupabaseAdmin()
+      await supabase
         .from('users')
         .update({
           subscription_status: 'past_due',
           updated_at: new Date().toISOString()
         })
-        .eq('clerk_user_id', userId)
+        .eq('auth_user_id', userId)
 
       console.log(`Marked user ${userId} as past due`)
     }

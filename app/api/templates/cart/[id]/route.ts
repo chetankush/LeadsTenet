@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
-import { getSupabaseClient } from '@/lib/supabase-client'
+import { createClient } from '@/utils/supabase/server'
+import { getSupabaseAdmin } from '@/utils/supabase/admin'
 
 /**
  * PATCH /api/templates/cart/[id]
@@ -11,32 +11,33 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
     const cartItemId = params.id
     const body = await request.json()
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Verify ownership
-    const { data: cartItem } = await supabase
+    const { data: cartItem } = await db
       .from('user_template_cart')
       .select('*')
       .eq('id', cartItemId)
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
       .single()
 
     if (!cartItem) {
@@ -47,7 +48,7 @@ export async function PATCH(
     }
 
     // Update cart item
-    const { data: updated, error } = await supabase
+    const { data: updated, error } = await db
       .from('user_template_cart')
       .update({
         folder_name: body.folder_name !== undefined ? body.folder_name : cartItem.folder_name,
@@ -92,31 +93,32 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = await auth()
-    if (!userId) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await getSupabaseClient()
+    const db = getSupabaseAdmin()
     const cartItemId = params.id
 
     // Get current user
-    const { data: user } = await supabase
+    const { data: dbUser } = await db
       .from('users')
       .select('id')
-      .eq('clerk_user_id', userId)
+      .eq('auth_user_id', user.id)
       .single()
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Delete cart item (RLS will ensure user owns it)
-    const { error } = await supabase
+    // Delete cart item
+    const { error } = await db
       .from('user_template_cart')
       .delete()
       .eq('id', cartItemId)
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
 
     if (error) {
       console.error('Error removing from cart:', error)

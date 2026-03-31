@@ -1,14 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, 
-  Mail, 
-  Building, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  User,
+  Mail,
+  Building,
   Calendar,
   Crown,
   Edit,
@@ -19,7 +28,7 @@ import { toast } from 'sonner'
 
 interface UserProfile {
   id: string
-  clerk_user_id: string
+  auth_user_id: string
   email: string
   full_name: string | null
   company_name: string | null
@@ -32,7 +41,6 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { user: clerkUser } = useUser()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -40,6 +48,8 @@ export default function ProfilePage() {
     full_name: '',
     company_name: ''
   })
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -48,27 +58,18 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true)
-      // For now, we'll create a profile from Clerk data
-      // In a real app, you'd fetch from your user API
-      if (clerkUser) {
-        const mockProfile: UserProfile = {
-          id: 'mock-id',
-          clerk_user_id: clerkUser.id,
-          email: clerkUser.emailAddresses[0]?.emailAddress || '',
-          full_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null,
-          company_name: null,
-          subscription_tier: 'free',
-          subscription_status: 'active',
-          emails_per_month: 100,
-          campaigns_limit: 5,
-          leads_per_upload: 500,
-          created_at: clerkUser.createdAt?.toISOString() || new Date().toISOString()
-        }
-        
-        setProfile(mockProfile)
+      const response = await fetch('/api/user/profile')
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile')
+      }
+
+      const data = await response.json()
+      if (data.success && data.profile) {
+        setProfile(data.profile)
         setFormData({
-          full_name: mockProfile.full_name || '',
-          company_name: mockProfile.company_name || ''
+          full_name: data.profile.full_name || '',
+          company_name: data.profile.company_name || ''
         })
       }
     } catch (error) {
@@ -81,18 +82,26 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     try {
-      // In a real app, you'd call your API to update the profile
-      toast.success('Profile updated successfully!')
-      setEditing(false)
-      
-      // Update local state
-      if (profile) {
-        setProfile({
-          ...profile,
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           full_name: formData.full_name || null,
           company_name: formData.company_name || null
         })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile')
       }
+
+      const data = await response.json()
+      if (data.success && data.profile) {
+        setProfile(data.profile)
+      }
+
+      toast.success('Profile updated successfully!')
+      setEditing(false)
     } catch (error) {
       console.error('Error updating profile:', error)
       toast.error('Failed to update profile')
@@ -105,6 +114,28 @@ export default function ProfilePage() {
       company_name: profile?.company_name || ''
     })
     setEditing(false)
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      setDeletingAccount(true)
+      const response = await fetch('/api/user/delete', { method: 'DELETE' })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete account')
+      }
+
+      toast.success('Account deleted. Redirecting...')
+      // Redirect to home after short delay
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1500)
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      toast.error('Failed to delete account. Please try again.')
+      setDeletingAccount(false)
+      setShowDeleteDialog(false)
+    }
   }
 
   const getTierColor = (tier: string) => {
@@ -306,7 +337,11 @@ export default function ProfilePage() {
                 <p className="text-blue-700 text-sm mb-3">
                   Get more emails, campaigns, and advanced features
                 </p>
-                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600"
+                  onClick={() => toast.info('Billing system coming soon. Contact us for enterprise pricing.')}
+                >
                   <Crown className="mr-2 h-4 w-4" />
                   Upgrade Now
                 </Button>
@@ -331,12 +366,40 @@ export default function ProfilePage() {
                 Permanently delete your account and all associated data
               </p>
             </div>
-            <Button variant="outline" size="sm" className="border-red-300 text-red-700">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-300 text-red-700"
+              onClick={() => setShowDeleteDialog(true)}
+            >
               Delete Account
             </Button>
           </div>
         </div>
       </Card>
+
+      {/* Delete Account Confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all associated data including
+              campaigns, leads, email logs, and settings. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletingAccount ? 'Deleting...' : 'Yes, Delete My Account'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

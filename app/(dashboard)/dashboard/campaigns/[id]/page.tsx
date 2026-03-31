@@ -14,7 +14,9 @@ import {
   Calendar,
   Eye,
   Download,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface Campaign {
@@ -50,6 +52,8 @@ export default function CampaignDetailPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const leadsPerPage = 10
 
   useEffect(() => {
     if (campaignId) {
@@ -69,28 +73,7 @@ export default function CampaignDetailPage() {
       
       const campaignData = await campaignResponse.json()
       setCampaign(campaignData.campaign)
-      
-      // For now, we'll show mock leads data
-      // In a real app, you'd fetch leads from /api/campaigns/${campaignId}/leads
-      const mockLeads: Lead[] = [
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john@example.com',
-          company: 'Tech Corp',
-          status: 'sent',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2', 
-          name: 'Jane Smith',
-          email: 'jane@company.com',
-          company: 'Business Inc',
-          status: 'delivered',
-          created_at: new Date().toISOString()
-        }
-      ]
-      setLeads(mockLeads)
+      setLeads(campaignData.leads || [])
       
       setError(null)
     } catch (err) {
@@ -160,6 +143,34 @@ export default function CampaignDetailPage() {
     )
   }
 
+  const handleExportCSV = () => {
+    if (leads.length === 0) {
+      return
+    }
+
+    const headers = ['Name', 'Email', 'Company', 'Status', 'Added']
+    const rows = leads.map(lead => [
+      lead.name || '',
+      lead.email || '',
+      lead.company || '',
+      lead.status || '',
+      new Date(lead.created_at).toLocaleDateString()
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}_leads.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   const openRate = campaign.emails_delivered > 0 
     ? Math.round((campaign.emails_opened / campaign.emails_delivered) * 100)
     : 0
@@ -191,9 +202,9 @@ export default function CampaignDetailPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportCSV} disabled={leads.length === 0}>
             <Download className="mr-2 h-4 w-4" />
-            Export
+            Export CSV
           </Button>
         </div>
       </div>
@@ -313,54 +324,88 @@ export default function CampaignDetailPage() {
             No leads found for this campaign
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Company
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Added
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{lead.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.company}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge className={getLeadStatusColor(lead.status)}>
-                        {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {new Date(lead.created_at).toLocaleDateString()}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Company
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Added
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {leads
+                    .slice((currentPage - 1) * leadsPerPage, currentPage * leadsPerPage)
+                    .map((lead) => (
+                    <tr key={lead.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{lead.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{lead.company}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge className={getLeadStatusColor(lead.status)}>
+                          {lead.status ? lead.status.charAt(0).toUpperCase() + lead.status.slice(1) : 'Pending'}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {new Date(lead.created_at).toLocaleDateString()}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {leads.length > leadsPerPage && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <p className="text-sm text-gray-500">
+                  Showing {(currentPage - 1) * leadsPerPage + 1} to {Math.min(currentPage * leadsPerPage, leads.length)} of {leads.length} leads
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-gray-700">
+                    Page {currentPage} of {Math.ceil(leads.length / leadsPerPage)}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(leads.length / leadsPerPage), p + 1))}
+                    disabled={currentPage >= Math.ceil(leads.length / leadsPerPage)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </Card>
     </div>

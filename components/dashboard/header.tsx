@@ -1,19 +1,49 @@
 'use client'
 
-import { UserButton, useUser } from '@clerk/nextjs'
-import { Bell, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
+import { Bell, Search, LogOut, User as UserIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export function DashboardHeader() {
-  const { user } = useUser()
+  const [userEmail, setUserEmail] = useState<string>('')
+  const [userName, setUserName] = useState<string>('')
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserEmail(user.email || '')
+        setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
+      }
+    }
+    getUser()
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/sign-in')
+    router.refresh()
+  }
+
+  const firstName = userName.split(' ')[0]
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-semibold text-gray-900">
-            Welcome back, {user?.firstName || 'User'}!
+            Welcome back, {firstName}!
           </h1>
         </div>
 
@@ -36,19 +66,28 @@ export function DashboardHeader() {
           <div className="flex items-center space-x-3">
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">
-                {user?.fullName || user?.emailAddresses[0]?.emailAddress}
+                {userName}
               </p>
               <p className="text-xs text-gray-500">
                 Free Plan
               </p>
             </div>
-            <UserButton 
-              appearance={{
-                elements: {
-                  avatarBox: 'w-8 h-8'
-                }
-              }}
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="rounded-full w-8 h-8 p-0 bg-gradient-to-br from-blue-500 to-purple-600">
+                  <UserIcon className="h-4 w-4 text-white" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-sm text-gray-500 cursor-default">
+                  {userEmail}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut} className="text-red-600 cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

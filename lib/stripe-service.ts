@@ -1,15 +1,20 @@
 import Stripe from 'stripe'
-import { loadStripe } from '@stripe/stripe-js'
+import { loadStripe, type Stripe as StripeJs } from '@stripe/stripe-js'
 
 // Server-side Stripe instance
 // TODO: Uncomment when Stripe API keys are available
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+const stripeInstance = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-08-27.basil',
 }) : null
+
+function getStripeServer(): Stripe {
+  if (!stripeInstance) throw new Error('Stripe is not configured. Add STRIPE_SECRET_KEY to .env')
+  return stripeInstance
+}
 
 // Client-side Stripe instance
 // TODO: Uncomment when Stripe API keys are available
-let stripePromise: Promise<Stripe | null>
+let stripePromise: Promise<StripeJs | null>
 const getStripe = () => {
   if (!stripePromise && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
     stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
@@ -102,12 +107,9 @@ export class StripeService {
     cancelUrl: string
   }) {
     try {
-      // TODO: Remove this check when Stripe is configured
-      if (!stripe) {
-        throw new Error('Stripe not configured. Please add STRIPE_SECRET_KEY to environment variables.')
-      }
+      // getStripeServer() throws if not configured
 
-      const session = await stripe.checkout.sessions.create({
+      const session = await getStripeServer().checkout.sessions.create({
         mode: 'subscription',
         payment_method_types: ['card'],
         line_items: [
@@ -146,12 +148,9 @@ export class StripeService {
     returnUrl: string
   }) {
     try {
-      // TODO: Remove this check when Stripe is configured
-      if (!stripe) {
-        throw new Error('Stripe not configured. Please add STRIPE_SECRET_KEY to environment variables.')
-      }
+      // getStripeServer() throws if not configured
 
-      const session = await stripe.billingPortal.sessions.create({
+      const session = await getStripeServer().billingPortal.sessions.create({
         customer: customerId,
         return_url: returnUrl,
       })
@@ -174,12 +173,9 @@ export class StripeService {
     userId: string
   }) {
     try {
-      // TODO: Remove this check when Stripe is configured
-      if (!stripe) {
-        throw new Error('Stripe not configured. Please add STRIPE_SECRET_KEY to environment variables.')
-      }
+      // getStripeServer() throws if not configured
 
-      const customer = await stripe.customers.create({
+      const customer = await getStripeServer().customers.create({
         email,
         name,
         metadata: {
@@ -197,7 +193,7 @@ export class StripeService {
   // Get customer by ID
   static async getCustomer(customerId: string) {
     try {
-      const customer = await stripe.customers.retrieve(customerId)
+      const customer = await getStripeServer().customers.retrieve(customerId)
       return customer
     } catch (error) {
       console.error('Error retrieving customer:', error)
@@ -208,7 +204,7 @@ export class StripeService {
   // Get customer's subscriptions
   static async getCustomerSubscriptions(customerId: string) {
     try {
-      const subscriptions = await stripe.subscriptions.list({
+      const subscriptions = await getStripeServer().subscriptions.list({
         customer: customerId,
         status: 'all',
       })
@@ -223,7 +219,7 @@ export class StripeService {
   // Cancel a subscription
   static async cancelSubscription(subscriptionId: string) {
     try {
-      const subscription = await stripe.subscriptions.cancel(subscriptionId)
+      const subscription = await getStripeServer().subscriptions.cancel(subscriptionId)
       return subscription
     } catch (error) {
       console.error('Error canceling subscription:', error)
@@ -240,9 +236,9 @@ export class StripeService {
     priceId: string
   }) {
     try {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const subscription = await getStripeServer().subscriptions.retrieve(subscriptionId)
       
-      const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
+      const updatedSubscription = await getStripeServer().subscriptions.update(subscriptionId, {
         items: [
           {
             id: subscription.items.data[0].id,
@@ -262,7 +258,7 @@ export class StripeService {
   static constructEvent(payload: string | Buffer, signature: string) {
     try {
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
-      return stripe.webhooks.constructEvent(payload, signature, webhookSecret)
+      return getStripeServer().webhooks.constructEvent(payload, signature, webhookSecret)
     } catch (error) {
       console.error('Error constructing webhook event:', error)
       throw error
@@ -280,7 +276,8 @@ export class StripeService {
     timestamp?: number
   }) {
     try {
-      const usageRecord = await stripe.subscriptionItems.createUsageRecord(
+      const stripeServer = getStripeServer() as any
+      const usageRecord = await stripeServer.subscriptionItems.createUsageRecord(
         subscriptionItemId,
         {
           quantity,
