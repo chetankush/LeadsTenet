@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { getAuthUser } from '@/lib/auth-helpers'
 import { dbService } from '@/lib/database-service'
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const { user: authUser } = await getAuthUser()
+    if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Ensure user exists in database
-    const clerkUser = await currentUser()
-    if (clerkUser) {
-      await dbService.getOrCreateUser({
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        full_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null,
-        company_name: null
-      })
-    }
+    // Ensure a profile row exists (also handled by the handle_new_user trigger)
+    await dbService.getOrCreateUser({
+      email: authUser.email || '',
+      full_name: (authUser.user_metadata?.full_name as string) || null,
+      company_name: null
+    })
 
     // Get current user from database
     const user = await dbService.getCurrentUser()

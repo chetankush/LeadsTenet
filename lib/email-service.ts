@@ -41,11 +41,10 @@ export class EmailService {
   private rateLimitDelay: number = 2000 // 2 seconds between emails
 
   constructor() {
-    // Use your working API key directly for now
-    const apiKey = process.env.RESEND_API_KEY || 're_Mdye53Y9_EEYZfU5pzgCKhZXtTgrVKwiX'
-    
-    console.log('🔑 Email Service: Initializing with Resend API key:', apiKey.substring(0, 10) + '...')
-    
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is required')
+    }
     this.resend = new Resend(apiKey)
   }
 
@@ -202,11 +201,23 @@ export class EmailService {
   }
 
   /**
+   * Escape HTML so AI/lead-derived content can't inject markup/scripts.
+   */
+  private escapeHtml = (value: string): string => {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  /**
    * Format email content with proper HTML structure
    */
   private formatEmailContent = (body: string, lead: LeadData): string => {
-    // Convert newlines to HTML breaks and add basic styling
-    const formattedBody = body
+    // Escape first (prevents HTML/script injection), THEN apply formatting.
+    const formattedBody = this.escapeHtml(body)
       .replace(/\n\n/g, '</p><p>')
       .replace(/\n/g, '<br>')
 

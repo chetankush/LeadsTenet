@@ -237,7 +237,7 @@ export class DomainService {
       }
 
       const verificationData = verifyResult.data!
-      const isVerified = verificationData.status === 'verified'
+      const isVerified = (verificationData as any).status === 'verified'
 
       // Update domain status
       const updateData: any = {

@@ -16,7 +16,7 @@ import {
   Users,
   FileSpreadsheet
 } from 'lucide-react'
-import { STRIPE_PLANS } from '@/lib/stripe-service'
+import { PLANS } from '@/lib/plans'
 import { toast } from 'sonner'
 
 interface SubscriptionCardProps {
@@ -37,7 +37,7 @@ interface SubscriptionCardProps {
 export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
   const [loading, setLoading] = useState(false)
 
-  const currentPlan = STRIPE_PLANS[user.subscription_tier]
+  const currentPlan = PLANS[user.subscription_tier]
   
   const getPlanIcon = (tier: string) => {
     switch (tier) {
@@ -60,25 +60,15 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
   const handleUpgrade = async (planId: string) => {
     setLoading(true)
     try {
-      const plan = STRIPE_PLANS[planId as keyof typeof STRIPE_PLANS]
-      if (!plan.priceId) return
-
-      // TODO: Remove this when Stripe is configured
-      toast.error('Billing system not configured yet. Please contact support for upgrade.')
-      return
-
-      const response = await fetch('/api/stripe/create-checkout-session', {
+      const response = await fetch('/api/dodo/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId: plan.priceId,
-          planId: plan.id
-        })
+        body: JSON.stringify({ planId })
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error)
+        throw new Error(error.error || 'Failed to start checkout')
       }
 
       const { url } = await response.json()
@@ -96,17 +86,13 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
   const handleManageBilling = async () => {
     setLoading(true)
     try {
-      // TODO: Remove this when Stripe is configured
-      toast.error('Billing portal not configured yet. Please contact support.')
-      return
-
-      const response = await fetch('/api/stripe/create-portal-session', {
+      const response = await fetch('/api/dodo/create-portal-session', {
         method: 'POST'
       })
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error)
+        throw new Error(error.error || 'Unable to open billing portal')
       }
 
       const { url } = await response.json()
@@ -115,7 +101,7 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
       }
     } catch (error) {
       console.error('Error opening billing portal:', error)
-      toast.error('Unable to open billing portal')
+      toast.error(error instanceof Error ? error.message : 'Unable to open billing portal')
     } finally {
       setLoading(false)
     }

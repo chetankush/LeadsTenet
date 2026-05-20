@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Check, Zap, Star, Crown } from 'lucide-react'
-import { STRIPE_PLANS } from '@/lib/stripe-service'
+import { PLANS } from '@/lib/plans'
 import Link from 'next/link'
 
 export function PricingSection() {
@@ -13,19 +13,19 @@ export function PricingSection() {
 
   const plans = [
     {
-      ...STRIPE_PLANS.free,
+      ...PLANS.free,
       icon: Star,
       popular: false,
       color: 'border-gray-200'
     },
     {
-      ...STRIPE_PLANS.pro,
+      ...PLANS.pro,
       icon: Zap,
       popular: true,
       color: 'border-blue-500 ring-2 ring-blue-500 ring-opacity-20'
     },
     {
-      ...STRIPE_PLANS.enterprise,
+      ...PLANS.enterprise,
       icon: Crown,
       popular: false,
       color: 'border-gray-200'
@@ -153,22 +153,16 @@ export function PricingSection() {
                       </Button>
                     </Link>
                   ) : (
-                    <div className="space-y-2">
-                      <Button 
+                    <Link href={`/sign-up?redirect=${encodeURIComponent('/dashboard/settings')}`}>
+                      <Button
                         className={`w-full ${
-                          plan.popular 
-                            ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                            : ''
+                          plan.popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
                         }`}
                         variant={plan.popular ? 'default' : 'outline'}
-                        disabled
                       >
-                        Coming Soon
+                        Get Started
                       </Button>
-                      <p className="text-xs text-gray-500 text-center">
-                        Billing system in setup
-                      </p>
-                    </div>
+                    </Link>
                   )}
                 </div>
 

@@ -455,6 +455,9 @@ CREATE TRIGGER update_campaigns_updated_at
 -- Create useful views
 
 -- User dashboard statistics view
+-- (drop first: the column set differs from the earlier migration, and
+--  CREATE OR REPLACE VIEW cannot reorder/insert columns)
+DROP VIEW IF EXISTS public.user_dashboard_stats CASCADE;
 CREATE OR REPLACE VIEW public.user_dashboard_stats AS
 SELECT 
     u.id as user_id,
@@ -493,6 +496,7 @@ LEFT JOIN public.email_logs el ON l.id = el.lead_id
 GROUP BY u.id, u.clerk_user_id, u.subscription_tier, u.full_name, u.email, u.emails_per_month, u.campaigns_limit, u.leads_per_upload;
 
 -- Campaign performance view
+DROP VIEW IF EXISTS public.campaign_performance CASCADE;
 CREATE OR REPLACE VIEW public.campaign_performance AS
 SELECT 
     c.*,

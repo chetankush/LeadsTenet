@@ -1,0 +1,2 @@
+-- Local seed data (intentionally empty).
+-- Subscription plans are seeded by the schema migrations.

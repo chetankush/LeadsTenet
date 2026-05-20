@@ -25,7 +25,7 @@ export function LandingHeader() {
             Pricing
           </a>
           <a href="#testimonials" className="text-gray-600 hover:text-black font-medium">
-            Testimonials
+            Why us
           </a>
           <Link href="/sign-in" className="text-gray-600 hover:text-black font-medium">
             Sign In

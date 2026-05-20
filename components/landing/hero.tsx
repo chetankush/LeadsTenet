@@ -29,12 +29,15 @@ export function LandingHero() {
           </Link>
           
           <Button
+            asChild
             variant="outline"
             size="lg"
             className="font-bold text-lg px-8 py-6 bg-transparent border-2 border-black text-black hover:bg-black hover:text-white rounded-full"
           >
-            <Play className="mr-2 h-5 w-5" />
-            View Demo
+            <a href="#features">
+              <Play className="mr-2 h-5 w-5" />
+              See How It Works
+            </a>
           </Button>
         </div>
       </div>

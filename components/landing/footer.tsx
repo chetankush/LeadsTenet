@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Mail, MapPin, Phone, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ContactForm } from '@/components/landing/contact-form'
 
 export function LandingFooter() {
   return (
@@ -47,32 +48,7 @@ export function LandingFooter() {
               </div>
             </div>
             <div className="bg-white rounded-3xl p-8">
-              <form className="space-y-6">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-black"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="email"
-                    placeholder="Your Email"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-black"
-                  />
-                </div>
-                <div>
-                  <textarea
-                    placeholder="Your Message"
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-black resize-none"
-                  ></textarea>
-                </div>
-                <Button className="w-full font-bold bg-black text-white hover:bg-gray-800 rounded-full py-3">
-                  Send Message
-                </Button>
-              </form>
+              <ContactForm />
             </div>
           </div>
         </div>
@@ -103,13 +79,13 @@ export function LandingFooter() {
             <div>
               <h4 className="font-bold text-black mb-4">Company</h4>
               <div className="space-y-2">
-                <a href="#" className="block text-gray-600 hover:text-black">
+                <a href="#contact" className="block text-gray-600 hover:text-black">
                   About
                 </a>
-                <a href="#" className="block text-gray-600 hover:text-black">
+                <a href="#contact" className="block text-gray-600 hover:text-black">
                   Blog
                 </a>
-                <a href="#" className="block text-gray-600 hover:text-black">
+                <a href="#contact" className="block text-gray-600 hover:text-black">
                   Careers
                 </a>
               </div>
@@ -117,25 +93,25 @@ export function LandingFooter() {
             <div>
               <h4 className="font-bold text-black mb-4">Support</h4>
               <div className="space-y-2">
-                <a href="#" className="block text-gray-600 hover:text-black">
+                <a href="#contact" className="block text-gray-600 hover:text-black">
                   Help Center
                 </a>
                 <a href="#contact" className="block text-gray-600 hover:text-black">
                   Contact
                 </a>
-                <a href="#" className="block text-gray-600 hover:text-black">
+                <a href="#contact" className="block text-gray-600 hover:text-black">
                   Status
                 </a>
               </div>
             </div>
           </div>
           <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-600 mb-4 md:mb-0">© 2024 LeadsTeNet. All rights reserved.</p>
+            <p className="text-gray-600 mb-4 md:mb-0">© 2026 LeadsTeNet. All rights reserved.</p>
             <div className="flex gap-8 text-gray-600">
-              <a href="#" className="hover:text-black">
+              <a href="#contact" className="hover:text-black">
                 Privacy Policy
               </a>
-              <a href="#" className="hover:text-black">
+              <a href="#contact" className="hover:text-black">
                 Terms of Service
               </a>
             </div>

@@ -3,6 +3,10 @@ import * as XLSX from 'xlsx'
 import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { getAuthUser } from '@/lib/auth-helpers'
+
+const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
+const ALLOWED_EXTENSIONS = ['.xlsx', '.xls']
 
 interface LeadData {
   name?: string
@@ -26,6 +30,12 @@ const isValidEmail = (email: string): boolean => {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication before doing any work.
+    const { user } = await getAuthUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
 
@@ -33,11 +43,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
+    // Validate type and size before reading into memory.
+    const ext = path.extname(file.name || '').toLowerCase()
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json(
+        { error: 'Unsupported file type. Upload a .xlsx or .xls file.' },
+        { status: 400 }
+      )
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 5 MB.' },
+        { status: 413 }
+      )
+    }
+
     // Read file buffer
     const buffer = Buffer.from(await file.arrayBuffer())
-    
-    // Parse Excel file
-    const workbook = XLSX.read(buffer, { type: 'buffer' })
+
+    // Parse Excel file (do not evaluate formulas in untrusted files)
+    const workbook = XLSX.read(buffer, { type: 'buffer', cellFormula: false, cellHTML: false })
     const sheetName = workbook.SheetNames[0]
     const worksheet = workbook.Sheets[sheetName]
     

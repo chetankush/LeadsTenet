@@ -1,8 +1,8 @@
 -- LeadsTeNet Multi-User Database Schema
 -- This migration creates the complete multi-user structure while preserving existing functionality
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_claims_user_id" = '';
+-- (removed: `ALTER DATABASE postgres SET "app.jwt_claims_user_id"` — superuser-only,
+--  fails on local apply, and the GUC was never read by the app.)
 
 -- Users table (integrates with Clerk)
 CREATE TABLE IF NOT EXISTS users (
@@ -218,6 +218,16 @@ INSERT INTO subscription_plans (id, name, description, price_monthly, price_year
 ON CONFLICT (id) DO NOTHING;
 
 -- Row Level Security Policies
+
+-- requesting_user_id() must exist before the policies below reference it.
+-- (A later migration also defines it; this keeps migrations order-independent.)
+CREATE OR REPLACE FUNCTION public.requesting_user_id()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT NULLIF(current_setting('request.jwt.claims', true)::json ->> 'sub', '')::text;
+$$;
 
 -- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

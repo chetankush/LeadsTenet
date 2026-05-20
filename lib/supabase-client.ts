@@ -1,44 +1,13 @@
-import { createClient } from '@supabase/supabase-js'
-import { auth } from '@clerk/nextjs/server'
+import { createClient } from '@/utils/supabase/server'
 
-// Simple Supabase client factory that works with Clerk
+/**
+ * Returns a cookie-based Supabase client scoped to the signed-in user.
+ * Row Level Security applies, so every query is automatically restricted to
+ * the current user's rows. Use this for all user-facing server code.
+ *
+ * For privileged background work (e.g. webhook handlers) use
+ * `createAdminClient` from `@/utils/supabase/admin` instead.
+ */
 export async function getSupabaseClient() {
-  try {
-    const { getToken } = await auth()
-    
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          fetch: async (url, options = {}) => {
-            try {
-              const clerkToken = await getToken({
-                template: 'supabase',
-              })
-
-              const headers = new Headers(options?.headers)
-              if (clerkToken) {
-                headers.set('Authorization', `Bearer ${clerkToken}`)
-              }
-
-              return fetch(url, {
-                ...options,
-                headers,
-              })
-            } catch (error) {
-              // If Clerk token fails, use default fetch
-              return fetch(url, options)
-            }
-          },
-        },
-      }
-    )
-  } catch (error) {
-    // Fallback to basic Supabase client
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  }
+  return createClient()
 }

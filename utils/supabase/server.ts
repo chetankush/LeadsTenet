@@ -1,33 +1,34 @@
-import { Database } from '@/types/database.types'
-import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-export async function createClerkSupabaseClientSsr() {
-    // The `useAuth()` hook is used to access the `getToken()` method
-    const { getToken } = await auth()
+/**
+ * Cookie-based Supabase client for Server Components, Route Handlers and
+ * Server Actions. Authenticates as the signed-in user (anon key + the
+ * session stored in cookies), so Row Level Security applies.
+ */
+export async function createClient() {
+  const cookieStore = await cookies()
 
-    return createClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            global: {
-                // Get the custom Supabase token from Clerk
-                fetch: async (url, options = {}) => {
-                    const clerkToken = await getToken({
-                        template: 'supabase',
-                    })
-
-                    // Insert the Clerk Supabase token into the headers
-                    const headers = new Headers(options?.headers)
-                    headers.set('Authorization', `Bearer ${clerkToken}`)
-
-                    // Now call the default fetch
-                    return fetch(url, {
-                        ...options,
-                        headers,
-                    })
-                },
-            },
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
         },
-    )
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // `setAll` is called from a Server Component where cookies are
+            // read-only. The session is refreshed in middleware instead, so
+            // this can be safely ignored.
+          }
+        },
+      },
+    }
+  )
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth-helpers'
 import { processLeadsWithAI } from '@/lib/ai-service'
 import { emailService } from '@/lib/email-service'
 import type { LeadData, ChannelType } from '@/lib/ai-service'
@@ -13,8 +14,14 @@ interface ProcessLeadsRequest {
 
 export async function POST(request: NextRequest) {
   console.log('🚀 === PROCESSING LEADS API ROUTE ===')
-  
+
   try {
+    // Require authentication: this endpoint triggers paid AI + email sending.
+    const { user } = await getAuthUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body: ProcessLeadsRequest = await request.json()
     const { leads, channels, emailConfig, sendEmails } = body
 

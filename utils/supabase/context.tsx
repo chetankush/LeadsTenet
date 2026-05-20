@@ -1,51 +1,27 @@
 "use client"
 
-import { Database } from "@/types/database.types";
-import { useSession } from "@clerk/nextjs";
-import { SupabaseClient, createClient } from "@supabase/supabase-js";
-import { createContext, useContext, useMemo, ReactNode } from "react";
+import { createClient } from "@/utils/supabase/client"
+import { createContext, useContext, useMemo, ReactNode } from "react"
 
-const SupabaseContext = createContext<SupabaseClient<Database> | undefined>(undefined);
+type SupabaseClient = ReturnType<typeof createClient>
+
+const SupabaseContext = createContext<SupabaseClient | undefined>(undefined)
 
 export function SupabaseProvider({ children }: { children: ReactNode }) {
-    const { session } = useSession();
-
-    const supabase = useMemo(() => {
-        return createClient<Database>(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_KEY!,
-            {
-                global: {
-                    fetch: async (url, options = {}) => {
-                        const clerkToken = await session?.getToken({
-                            template: 'supabase',
-                        });
-
-                        const headers = new Headers(options?.headers);
-                        headers.set('Authorization', `Bearer ${clerkToken}`);
-
-                        return fetch(url, {
-                            ...options,
-                            headers,
-                        });
-                    },
-                },
-            },
-        );
-    }, [session]);
+    const supabase = useMemo(() => createClient(), [])
 
     return (
         <SupabaseContext.Provider value={supabase}>
             {children}
         </SupabaseContext.Provider>
-    );
+    )
 }
 
 // Hook to use the Supabase client
 export function useSupabase() {
-    const context = useContext(SupabaseContext);
+    const context = useContext(SupabaseContext)
     if (context === undefined) {
-        throw new Error('useSupabase must be used within a SupabaseProvider');
+        throw new Error('useSupabase must be used within a SupabaseProvider')
     }
-    return context;
+    return context
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUser } from '@/lib/auth-helpers'
 import { dbService } from '@/lib/database-service'
 import { processLeadsWithAI } from '@/lib/ai-service'
 import { emailService } from '@/lib/email-service'
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
   console.log('🚀 === PROCESSING CAMPAIGN API ROUTE ===')
   
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const { user } = await getAuthUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
     console.log('- Campaign ID:', campaignId)
     console.log('- Channels requested:', channels)
     console.log('- Send emails:', sendEmails)
-    console.log('- User ID:', userId)
+    console.log('- User ID:', user.id)
 
-    // Get campaign and verify ownership
+    // getCampaign() scopes by user_id, so a non-owner gets null -> 404 (no IDOR)
     const campaign = await dbService.getCampaign(campaignId)
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       const finalEmailConfig: EmailConfig = emailConfig || {
         fromEmail: campaign.from_email || 'onboarding@resend.dev',
         fromName: campaign.from_name || 'LeadGen AI Solutions',
-        replyTo: campaign.reply_to_email
+        replyTo: campaign.reply_to_email || undefined
       }
 
       console.log('📨 Email configuration:', finalEmailConfig)

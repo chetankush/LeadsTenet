@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { createClient } from '@/utils/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  User, 
-  Mail, 
-  Building, 
+import {
+  User,
+  Mail,
+  Building,
   Calendar,
   Crown,
   Edit,
@@ -19,7 +19,6 @@ import { toast } from 'sonner'
 
 interface UserProfile {
   id: string
-  clerk_user_id: string
   email: string
   full_name: string | null
   company_name: string | null
@@ -32,9 +31,9 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { user: clerkUser } = useUser()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
@@ -43,34 +42,50 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchProfile = async () => {
     try {
       setLoading(true)
-      // For now, we'll create a profile from Clerk data
-      // In a real app, you'd fetch from your user API
-      if (clerkUser) {
-        const mockProfile: UserProfile = {
-          id: 'mock-id',
-          clerk_user_id: clerkUser.id,
-          email: clerkUser.emailAddresses[0]?.emailAddress || '',
-          full_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null,
-          company_name: null,
-          subscription_tier: 'free',
-          subscription_status: 'active',
-          emails_per_month: 100,
-          campaigns_limit: 5,
-          leads_per_upload: 500,
-          created_at: clerkUser.createdAt?.toISOString() || new Date().toISOString()
-        }
-        
-        setProfile(mockProfile)
-        setFormData({
-          full_name: mockProfile.full_name || '',
-          company_name: mockProfile.company_name || ''
-        })
+      const supabase = createClient()
+      const {
+        data: { user }
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        toast.error('You are not signed in')
+        return
       }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        throw error
+      }
+
+      const resolved: UserProfile = {
+        id: user.id,
+        email: data?.email || user.email || '',
+        full_name: data?.full_name ?? (user.user_metadata?.full_name || null),
+        company_name: data?.company_name ?? null,
+        subscription_tier: data?.subscription_tier || 'free',
+        subscription_status: data?.subscription_status || 'active',
+        emails_per_month: data?.emails_per_month ?? 100,
+        campaigns_limit: data?.campaigns_limit ?? 5,
+        leads_per_upload: data?.leads_per_upload ?? 500,
+        created_at: data?.created_at || user.created_at
+      }
+
+      setProfile(resolved)
+      setFormData({
+        full_name: resolved.full_name || '',
+        company_name: resolved.company_name || ''
+      })
     } catch (error) {
       console.error('Error fetching profile:', error)
       toast.error('Failed to load profile')
@@ -80,22 +95,32 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
+    if (!profile) return
     try {
-      // In a real app, you'd call your API to update the profile
-      toast.success('Profile updated successfully!')
-      setEditing(false)
-      
-      // Update local state
-      if (profile) {
-        setProfile({
-          ...profile,
+      setSaving(true)
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('users')
+        .update({
           full_name: formData.full_name || null,
           company_name: formData.company_name || null
         })
-      }
+        .eq('id', profile.id)
+
+      if (error) throw error
+
+      setProfile({
+        ...profile,
+        full_name: formData.full_name || null,
+        company_name: formData.company_name || null
+      })
+      toast.success('Profile updated successfully!')
+      setEditing(false)
     } catch (error) {
       console.error('Error updating profile:', error)
       toast.error('Failed to update profile')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -168,11 +193,11 @@ export default function ProfilePage() {
             </Button>
           ) : (
             <div className="flex space-x-2">
-              <Button onClick={handleSave} size="sm">
+              <Button onClick={handleSave} size="sm" disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
-                Save
+                {saving ? 'Saving...' : 'Save'}
               </Button>
-              <Button onClick={handleCancel} variant="outline" size="sm">
+              <Button onClick={handleCancel} variant="outline" size="sm" disabled={saving}>
                 <X className="mr-2 h-4 w-4" />
                 Cancel
               </Button>
@@ -209,7 +234,7 @@ export default function ProfilePage() {
                     placeholder="Enter your full name"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Company Name
@@ -231,7 +256,7 @@ export default function ProfilePage() {
                     {profile.full_name || 'Name not set'}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Building className="h-4 w-4 text-gray-400" />
                   <span className="text-gray-600">
@@ -268,7 +293,7 @@ export default function ProfilePage() {
       {/* Subscription Information */}
       <Card className="p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Subscription & Limits</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <div className="flex items-center space-x-2 mb-4">
@@ -280,7 +305,7 @@ export default function ProfilePage() {
                 • {profile.subscription_status}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Emails per month</span>
@@ -312,7 +337,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
             )}
-            
+
             <div className="text-sm text-gray-500">
               <p>Need more? Contact us for enterprise pricing and custom solutions.</p>
             </div>

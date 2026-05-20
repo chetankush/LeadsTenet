@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { getAuthUser } from '@/lib/auth-helpers'
 import { dbService } from '@/lib/database-service'
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const { user } = await getAuthUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -23,20 +23,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = auth()
-    if (!userId) {
+    const { user } = await getAuthUser()
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user data from Clerk and ensure user exists in database
-    const clerkUser = await currentUser()
-    if (clerkUser) {
-      await dbService.getOrCreateUser({
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        full_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || null,
-        company_name: null
-      })
-    }
+    // Ensure a profile row exists (also handled by the handle_new_user trigger)
+    await dbService.getOrCreateUser({
+      email: user.email || '',
+      full_name: (user.user_metadata?.full_name as string) || null,
+      company_name: null
+    })
 
     const body = await request.json()
     const { name, description, leads, domain_id, local_part, from_name, reply_to_email } = body
@@ -84,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create leads if provided
-    let createdLeads = []
+    let createdLeads: any[] = []
     if (leads && leads.length > 0) {
       // Check leads per upload limit
       const user = await dbService.getCurrentUser()

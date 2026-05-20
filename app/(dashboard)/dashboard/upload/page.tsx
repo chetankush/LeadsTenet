@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
-import { useUser } from '@clerk/nextjs'
 import { toast } from 'sonner'
 
 interface LeadData {
@@ -41,7 +40,6 @@ interface ProcessingResult {
 
 const EnhancedExcelUploadPage = () => {
   const router = useRouter()
-  const { user } = useUser()
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'ai-processing' | 'sending-emails' | 'success' | 'error'>('idle')
   const [processedData, setProcessedData] = useState<ProcessedData | null>(null)
   const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null)

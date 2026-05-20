@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUser } from '@/lib/auth-helpers'
 import { domainService } from '@/lib/domain-service'
-import { getSupabaseClient } from '@/lib/supabase-client'
 
 /**
  * GET /api/user/domains
@@ -9,31 +8,16 @@ import { getSupabaseClient } from '@/lib/supabase-client'
  */
 export async function GET() {
   try {
-    const { userId } = await auth()
+    const { user } = await getAuthUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Get user from database
-    const supabase = await getSupabaseClient()
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Get user domains
+    // user.id === public.users.id === auth uid
     const domains = await domainService.getUserDomains(user.id)
 
     return NextResponse.json({
@@ -56,9 +40,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth()
+    const { user } = await getAuthUser()
 
-    if (!userId) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -75,22 +59,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user from database
-    const supabase = await getSupabaseClient()
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('clerk_user_id', userId)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Add domain
+    // Add domain (user.id === public.users.id === auth uid)
     const result = await domainService.addUserDomain({
       domainName: domain.toLowerCase().trim(),
       userId: user.id
