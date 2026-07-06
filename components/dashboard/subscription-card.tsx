@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Mail,
   Users,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertTriangle
 } from 'lucide-react'
 import { PLANS } from '@/lib/plans'
 import { toast } from 'sonner'
@@ -50,10 +51,10 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
 
   const getPlanColor = (tier: string) => {
     switch (tier) {
-      case 'free': return 'text-gray-600 bg-gray-50'
-      case 'pro': return 'text-blue-600 bg-blue-50'
-      case 'enterprise': return 'text-purple-600 bg-purple-50'
-      default: return 'text-gray-600 bg-gray-50'
+      case 'free': return 'text-muted-foreground bg-muted'
+      case 'pro': return 'text-primary bg-primary/10'
+      case 'enterprise': return 'text-primary bg-primary/10'
+      default: return 'text-muted-foreground bg-muted'
     }
   }
 
@@ -122,16 +123,16 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-foreground">
                 {currentPlan.name} Plan
               </h3>
               {user.subscription_tier === 'pro' && (
-                <Badge className="bg-blue-100 text-blue-800">Popular</Badge>
+                <Badge className="bg-primary/10 text-primary">Popular</Badge>
               )}
             </div>
-            <p className="text-gray-600">{currentPlan.description}</p>
+            <p className="text-muted-foreground">{currentPlan.description}</p>
             {user.subscription_tier !== 'free' && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 ${currentPlan.price}/month
               </p>
             )}
@@ -153,7 +154,6 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
             <Button
               onClick={() => handleUpgrade('pro')}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700"
             >
               <TrendingUp className="h-4 w-4 mr-2" />
               Upgrade
@@ -167,19 +167,20 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <Mail className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">
                 Emails This Month
               </span>
             </div>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               {usage.emails_this_month.toLocaleString()} / {usage.email_limit.toLocaleString()}
             </span>
           </div>
           <Progress value={emailUsagePercent} className="h-2" />
           {emailUsagePercent > 80 && (
-            <p className="text-xs text-amber-600 mt-1">
-              ⚠️ Approaching email limit
+            <p className="text-xs text-warning mt-1 inline-flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Approaching email limit
             </p>
           )}
         </div>
@@ -187,12 +188,12 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">
                 Active Campaigns
               </span>
             </div>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               {usage.total_campaigns} / {usage.campaign_limit === -1 ? '∞' : usage.campaign_limit}
             </span>
           </div>
@@ -200,8 +201,9 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
             <>
               <Progress value={campaignUsagePercent} className="h-2" />
               {campaignUsagePercent > 80 && (
-                <p className="text-xs text-amber-600 mt-1">
-                  ⚠️ Approaching campaign limit
+                <p className="text-xs text-warning mt-1 inline-flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Approaching campaign limit
                 </p>
               )}
             </>
@@ -211,12 +213,12 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <FileSpreadsheet className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">
+              <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">
                 Leads Per Upload
               </span>
             </div>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               Up to {user.leads_per_upload.toLocaleString()}
             </span>
           </div>
@@ -225,12 +227,12 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
 
       {/* Upgrade Suggestions */}
       {user.subscription_tier === 'free' && (emailUsagePercent > 70 || campaignUsagePercent > 70) && (
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
           <div className="flex items-start space-x-3">
-            <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5" />
+            <TrendingUp className="h-5 w-5 text-primary mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-medium text-blue-900">Ready to scale up?</h4>
-              <p className="text-sm text-blue-700 mt-1">
+              <h4 className="font-medium text-foreground">Ready to scale up?</h4>
+              <p className="text-sm text-muted-foreground mt-1">
                 You're using most of your free plan limits. Upgrade to Pro for 1,000 emails/month and more features.
               </p>
               <div className="mt-3">
@@ -238,7 +240,6 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
                   size="sm"
                   onClick={() => handleUpgrade('pro')}
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   Upgrade to Pro - $49/month
                 </Button>
@@ -249,12 +250,12 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
       )}
 
       {user.subscription_tier === 'pro' && emailUsagePercent > 70 && (
-        <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/20">
           <div className="flex items-start space-x-3">
-            <Crown className="h-5 w-5 text-purple-600 mt-0.5" />
+            <Crown className="h-5 w-5 text-primary mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-medium text-purple-900">Need more capacity?</h4>
-              <p className="text-sm text-purple-700 mt-1">
+              <h4 className="font-medium text-foreground">Need more capacity?</h4>
+              <p className="text-sm text-muted-foreground mt-1">
                 Upgrade to Enterprise for 5,000 emails/month, unlimited campaigns, and priority support.
               </p>
               <div className="mt-3">
@@ -262,7 +263,6 @@ export function SubscriptionCard({ user, usage }: SubscriptionCardProps) {
                   size="sm"
                   onClick={() => handleUpgrade('enterprise')}
                   disabled={loading}
-                  className="bg-purple-600 hover:bg-purple-700"
                 >
                   Upgrade to Enterprise - $149/month
                 </Button>

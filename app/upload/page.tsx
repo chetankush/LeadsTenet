@@ -347,12 +347,12 @@ const ExcelUploadPage = () => {
             "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
             isDragActive 
               ? "border-primary bg-primary/5" 
-              : "border-gray-300 hover:border-primary",
+              : "border-border hover:border-primary",
             (uploadStatus === 'processing' || uploadStatus === 'ai-processing' || uploadStatus === 'sending-emails') && "pointer-events-none opacity-50"
           )}
         >
           <input {...getInputProps()} />
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           
           {(uploadStatus === 'processing' || uploadStatus === 'ai-processing' || uploadStatus === 'sending-emails') ? (
             <div>
@@ -361,16 +361,16 @@ const ExcelUploadPage = () => {
                 {uploadStatus === 'ai-processing' && `Generating AI content...`}
                 {uploadStatus === 'sending-emails' && `Sending emails...`}
               </p>
-              <p className="text-gray-500">{currentStep}</p>
+              <p className="text-muted-foreground">{currentStep}</p>
               <div className="mt-4 space-y-2">
-                <div className={`h-2 bg-gray-200 rounded ${uploadStatus !== 'processing' ? 'bg-green-200' : ''}`}>
-                  <div className={`h-full bg-green-500 rounded transition-all duration-500 ${
+                <div className={`h-2 bg-muted rounded ${uploadStatus !== 'processing' ? 'bg-success/20' : ''}`}>
+                  <div className={`h-full bg-success rounded transition-all duration-500 ${
                     uploadStatus === 'processing' ? 'w-1/3' :
                     uploadStatus === 'ai-processing' ? 'w-2/3' :
                     uploadStatus === 'sending-emails' ? 'w-full' : 'w-0'
                   }`}></div>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {uploadStatus === 'processing' && 'Step 1/3: Parsing Excel file'}
                   {uploadStatus === 'ai-processing' && 'Step 2/3: Generating personalized content with AI'}
                   {uploadStatus === 'sending-emails' && 'Step 3/3: Sending emails to all leads'}
@@ -382,7 +382,7 @@ const ExcelUploadPage = () => {
               <p className="text-lg font-medium mb-2">
                 {isDragActive ? "Drop your Excel file here" : "Upload Excel File"}
               </p>
-              <p className="text-gray-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Drag & drop or click to select your .xlsx or .xls file
               </p>
               <Button variant="outline">
@@ -396,7 +396,7 @@ const ExcelUploadPage = () => {
         {/* Results Display */}
         {uploadStatus === 'success' && processedData && (
           <div className="mt-8 space-y-4">
-            <div className="flex items-center text-green-600">
+            <div className="flex items-center text-success">
               <CheckCircle className="mr-2 h-5 w-5" />
               <h2 className="text-xl font-semibold">Processing Complete!</h2>
             </div>
@@ -404,30 +404,30 @@ const ExcelUploadPage = () => {
             {/* Summary Stats */}
             {processingResult?.summary && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="font-medium text-blue-800">Total Leads</p>
-                  <p className="text-2xl font-bold text-blue-600">{processingResult.summary.totalLeads}</p>
+                <div className="bg-primary/10 p-4 rounded-lg">
+                  <p className="font-medium text-primary">Total Leads</p>
+                  <p className="text-2xl font-bold text-primary">{processingResult.summary.totalLeads}</p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="font-medium text-green-800">AI Processed</p>
-                  <p className="text-2xl font-bold text-green-600">{processingResult.summary.aiProcessed}</p>
+                <div className="bg-success/10 p-4 rounded-lg">
+                  <p className="font-medium text-success">AI Processed</p>
+                  <p className="text-2xl font-bold text-success">{processingResult.summary.aiProcessed}</p>
                 </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="font-medium text-purple-800">Emails Sent</p>
-                  <p className="text-2xl font-bold text-purple-600">{processingResult.summary.emailsSent}</p>
+                <div className="bg-success/10 p-4 rounded-lg">
+                  <p className="font-medium text-success">Emails Sent</p>
+                  <p className="text-2xl font-bold text-success">{processingResult.summary.emailsSent}</p>
                 </div>
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <p className="font-medium text-red-800">Errors</p>
-                  <p className="text-2xl font-bold text-red-600">{processingResult.summary.totalErrors}</p>
+                <div className="bg-destructive/10 p-4 rounded-lg">
+                  <p className="font-medium text-destructive">Errors</p>
+                  <p className="text-2xl font-bold text-destructive">{processingResult.summary.totalErrors}</p>
                 </div>
               </div>
             )}
 
             {/* Excel Processing Errors */}
             {processedData.errors.length > 0 && (
-              <div className="bg-red-50 p-4 rounded-lg">
-                <h3 className="font-medium text-red-800 mb-2">Excel Processing Errors ({processedData.errors.length})</h3>
-                <ul className="text-sm text-red-700 space-y-1">
+              <div className="bg-destructive/10 p-4 rounded-lg">
+                <h3 className="font-medium text-destructive mb-2">Excel Processing Errors ({processedData.errors.length})</h3>
+                <ul className="text-sm text-destructive space-y-1">
                   {processedData.errors.slice(0, 5).map((error, index) => (
                     <li key={index}>• {error}</li>
                   ))}
@@ -440,23 +440,23 @@ const ExcelUploadPage = () => {
 
             {/* AI Processing Results */}
             {processingResult?.aiResponse?.processedLeads && (
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
+              <div className="bg-muted p-4 rounded-lg">
                 <h3 className="font-medium mb-3">🤖 AI Generated Content Sample:</h3>
                 <div className="space-y-3">
                   {processingResult.aiResponse.processedLeads.slice(0, 2).map((processed: any, index: number) => (
-                    <div key={index} className="bg-white p-3 rounded border">
+                    <div key={index} className="bg-card p-3 rounded border">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-800">{processed.originalLead.name}</h4>
-                        <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">
+                        <h4 className="font-semibold text-foreground">{processed.originalLead.name}</h4>
+                        <span className="text-sm bg-success/10 text-success px-2 py-1 rounded">
                           {processed.confidence}% confidence
                         </span>
                       </div>
                       {processed.channels.email && (
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Subject:</p>
-                          <p className="text-sm text-gray-600 mb-2">{processed.channels.email.subject}</p>
-                          <p className="text-sm font-medium text-gray-700">Body Preview:</p>
-                          <p className="text-sm text-gray-600 italic">
+                          <p className="text-sm font-medium text-muted-foreground">Subject:</p>
+                          <p className="text-sm text-muted-foreground mb-2">{processed.channels.email.subject}</p>
+                          <p className="text-sm font-medium text-muted-foreground">Body Preview:</p>
+                          <p className="text-sm text-muted-foreground italic">
                             {processed.channels.email.body.substring(0, 120)}...
                           </p>
                         </div>
@@ -469,19 +469,19 @@ const ExcelUploadPage = () => {
 
             {/* Email Sending Results */}
             {processingResult?.emailResults?.results && (
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg">
+              <div className="bg-muted p-4 rounded-lg">
                 <h3 className="font-medium mb-3">📧 Email Sending Results:</h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {processingResult.emailResults.results.map((result: any, index: number) => (
                     <div key={index} className={`flex items-center justify-between p-2 rounded text-sm ${
-                      result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      result.success ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
                     }`}>
                       <span className="flex items-center">
                         <span className="mr-2">{result.success ? '✅' : '❌'}</span>
                         {result.leadName} ({result.leadEmail})
                       </span>
                       {result.success && result.messageId && (
-                        <span className="text-xs text-gray-600">ID: {result.messageId.substring(0, 8)}...</span>
+                        <span className="text-xs text-muted-foreground">ID: {result.messageId.substring(0, 8)}...</span>
                       )}
                       {!result.success && result.error && (
                         <span className="text-xs">{result.error}</span>
@@ -493,20 +493,20 @@ const ExcelUploadPage = () => {
             )}
 
             {/* Debug Info */}
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-muted p-4 rounded-lg">
               <details>
-                <summary className="cursor-pointer font-medium text-gray-700 mb-2">🔧 Debug Information (Click to expand)</summary>
+                <summary className="cursor-pointer font-medium text-muted-foreground mb-2">🔧 Debug Information (Click to expand)</summary>
                 <div className="space-y-2">
                   <div>
                     <h4 className="font-medium text-sm">Excel Data Sample:</h4>
-                    <pre className="text-xs overflow-auto bg-white p-2 rounded border">
+                    <pre className="text-xs overflow-auto bg-card p-2 rounded border">
                       {JSON.stringify(processedData.leads.slice(0, 2), null, 2)}
                     </pre>
                   </div>
                   {processingResult && (
                     <div>
                       <h4 className="font-medium text-sm">Complete Processing Result:</h4>
-                      <pre className="text-xs overflow-auto bg-white p-2 rounded border max-h-40">
+                      <pre className="text-xs overflow-auto bg-card p-2 rounded border max-h-40">
                         {JSON.stringify(processingResult, null, 2)}
                       </pre>
                     </div>
@@ -518,7 +518,7 @@ const ExcelUploadPage = () => {
         )}
 
         {uploadStatus === 'error' && (
-          <div className="mt-8 flex items-center text-red-600">
+          <div className="mt-8 flex items-center text-destructive">
             <XCircle className="mr-2 h-5 w-5" />
             <p>Error processing file. Please check the console for details.</p>
           </div>

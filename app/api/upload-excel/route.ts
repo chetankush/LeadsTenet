@@ -4,6 +4,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import { getAuthUser } from '@/lib/auth-helpers'
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_EXTENSIONS = ['.xlsx', '.xls']
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const rl = rateLimit(`upload-excel:${user.id}`, 10, 60_000)
+    if (!rl.success) return tooManyRequests(rl)
 
     const formData = await request.formData()
     const file = formData.get('file') as File

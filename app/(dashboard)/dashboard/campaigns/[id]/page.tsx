@@ -104,21 +104,21 @@ export default function CampaignDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'draft': return 'bg-gray-100 text-gray-800'
-      case 'paused': return 'bg-yellow-100 text-yellow-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'active': return 'bg-success/10 text-success'
+      case 'draft': return 'bg-muted text-muted-foreground'
+      case 'paused': return 'bg-warning/10 text-warning'
+      case 'completed': return 'bg-primary/10 text-primary'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
   const getLeadStatusColor = (status: string) => {
     switch (status) {
-      case 'sent': return 'bg-green-100 text-green-800'
-      case 'delivered': return 'bg-blue-100 text-blue-800'
-      case 'opened': return 'bg-purple-100 text-purple-800'
-      case 'failed': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'sent': return 'bg-success/10 text-success'
+      case 'delivered': return 'bg-success/10 text-success'
+      case 'opened': return 'bg-primary/10 text-primary'
+      case 'failed': return 'bg-destructive/10 text-destructive'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -130,10 +130,10 @@ export default function CampaignDetailPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Loading...</h1>
+          <h1 className="text-3xl font-bold text-foreground">Loading...</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-gray-500">Loading campaign details...</div>
+          <div className="text-muted-foreground">Loading campaign details...</div>
         </div>
       </div>
     )
@@ -147,10 +147,10 @@ export default function CampaignDetailPage() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Campaign Not Found</h1>
+          <h1 className="text-3xl font-bold text-foreground">Campaign Not Found</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-destructive">Error: {error}</div>
           <Button onClick={() => router.push('/dashboard/campaigns')} className="mt-4">
             View All Campaigns
           </Button>
@@ -174,13 +174,13 @@ export default function CampaignDetailPage() {
           </Button>
           <div>
             <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold text-gray-900">{campaign.name}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{campaign.name}</h1>
               <Badge className={getStatusColor(campaign.status)}>
                 {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
               </Badge>
             </div>
             {campaign.description && (
-              <p className="text-gray-600 mt-2">{campaign.description}</p>
+              <p className="text-muted-foreground mt-2">{campaign.description}</p>
             )}
           </div>
         </div>
@@ -201,48 +201,48 @@ export default function CampaignDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="p-2 bg-muted rounded-lg">
+              <Users className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Leads</p>
-              <p className="text-2xl font-bold text-gray-900">{campaign.total_leads}</p>
+              <p className="text-sm text-muted-foreground">Total Leads</p>
+              <p className="text-2xl font-bold text-foreground">{campaign.total_leads}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Mail className="h-6 w-6 text-green-600" />
+            <div className="p-2 bg-muted rounded-lg">
+              <Mail className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Emails Sent</p>
-              <p className="text-2xl font-bold text-gray-900">{campaign.emails_sent}</p>
+              <p className="text-sm text-muted-foreground">Emails Sent</p>
+              <p className="text-2xl font-bold text-foreground">{campaign.emails_sent}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
+            <div className="p-2 bg-muted rounded-lg">
+              <TrendingUp className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Delivered</p>
-              <p className="text-2xl font-bold text-gray-900">{campaign.emails_delivered}</p>
+              <p className="text-sm text-muted-foreground">Delivered</p>
+              <p className="text-2xl font-bold text-foreground">{campaign.emails_delivered}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Eye className="h-6 w-6 text-orange-600" />
+            <div className="p-2 bg-muted rounded-lg">
+              <Eye className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Open Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{openRate}%</p>
+              <p className="text-sm text-muted-foreground">Open Rate</p>
+              <p className="text-2xl font-bold text-foreground">{openRate}%</p>
             </div>
           </div>
         </Card>
@@ -251,32 +251,32 @@ export default function CampaignDetailPage() {
       {/* Campaign Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Campaign Information</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Campaign Information</h2>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">From Email</p>
-              <p className="text-gray-900">{campaign.from_email}</p>
+              <p className="text-sm font-medium text-muted-foreground">From Email</p>
+              <p className="text-foreground">{campaign.from_email}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">From Name</p>
-              <p className="text-gray-900">{campaign.from_name}</p>
+              <p className="text-sm font-medium text-muted-foreground">From Name</p>
+              <p className="text-foreground">{campaign.from_name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Created</p>
-              <p className="text-gray-900">{new Date(campaign.created_at).toLocaleString()}</p>
+              <p className="text-sm font-medium text-muted-foreground">Created</p>
+              <p className="text-foreground">{new Date(campaign.created_at).toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Last Updated</p>
-              <p className="text-gray-900">{new Date(campaign.updated_at).toLocaleString()}</p>
+              <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+              <p className="text-foreground">{new Date(campaign.updated_at).toLocaleString()}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Performance Summary</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Performance Summary</h2>
           <div className="space-y-4">
             <div className="flex justify-between">
-              <span className="text-gray-600">Delivery Rate</span>
+              <span className="text-muted-foreground">Delivery Rate</span>
               <span className="font-semibold">
                 {campaign.emails_sent > 0 
                   ? Math.round((campaign.emails_delivered / campaign.emails_sent) * 100)
@@ -284,11 +284,11 @@ export default function CampaignDetailPage() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Open Rate</span>
+              <span className="text-muted-foreground">Open Rate</span>
               <span className="font-semibold">{openRate}%</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Total Opened</span>
+              <span className="text-muted-foreground">Total Opened</span>
               <span className="font-semibold">{campaign.emails_opened}</span>
             </div>
           </div>
@@ -298,49 +298,49 @@ export default function CampaignDetailPage() {
       {/* Leads List */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Campaign Leads</h2>
+          <h2 className="text-xl font-semibold text-foreground">Campaign Leads</h2>
           <Badge variant="outline">
             {leads.length} leads
           </Badge>
         </div>
 
         {leads.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No leads found for this campaign
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Company
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Added
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-gray-50">
+                  <tr key={lead.id} className="hover:bg-accent">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                      <div className="text-sm font-medium text-foreground">{lead.name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.email}</div>
+                      <div className="text-sm text-foreground">{lead.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.company}</div>
+                      <div className="text-sm text-foreground">{lead.company}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge className={getLeadStatusColor(lead.status)}>
@@ -348,7 +348,7 @@ export default function CampaignDetailPage() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {new Date(lead.created_at).toLocaleDateString()}
                       </div>
                     </td>

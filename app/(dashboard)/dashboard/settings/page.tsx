@@ -127,8 +127,8 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">Manage your account preferences and application settings</p>
+          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+          <p className="text-muted-foreground mt-2">Manage your account preferences and application settings</p>
         </div>
         
         {hasChanges && (
@@ -148,56 +148,56 @@ export default function SettingsPage() {
       {/* Email Settings */}
       <Card className="p-6">
         <div className="flex items-center space-x-2 mb-6">
-          <Mail className="h-5 w-5 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900">Email Settings</h2>
+          <Mail className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-semibold text-foreground">Email Settings</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Default From Email
             </label>
             <input
               type="email"
               value={settings.emailSettings.defaultFromEmail}
               onChange={(e) => handleInputChange('emailSettings', 'defaultFromEmail', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Default From Name
             </label>
             <input
               type="text"
               value={settings.emailSettings.defaultFromName}
               onChange={(e) => handleInputChange('emailSettings', 'defaultFromName', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Reply-To Email
             </label>
             <input
               type="email"
               value={settings.emailSettings.replyToEmail}
               onChange={(e) => handleInputChange('emailSettings', 'replyToEmail', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Optional"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Timezone
             </label>
             <select
               value={settings.appearance.timezone}
               onChange={(e) => handleInputChange('appearance', 'timezone', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="UTC">UTC</option>
               <option value="America/New_York">Eastern Time</option>
@@ -209,14 +209,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-muted-foreground mb-2">
             Email Signature
           </label>
           <textarea
             value={settings.emailSettings.emailSignature}
             onChange={(e) => handleInputChange('emailSettings', 'emailSignature', e.target.value)}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Optional email signature to append to all emails"
           />
         </div>
@@ -225,15 +225,15 @@ export default function SettingsPage() {
       {/* Notification Settings */}
       <Card className="p-6">
         <div className="flex items-center space-x-2 mb-6">
-          <Bell className="h-5 w-5 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-semibold text-foreground">Notifications</h2>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Email Sent Notifications</h3>
-              <p className="text-sm text-gray-600">Get notified when emails are successfully sent</p>
+              <h3 className="font-medium text-foreground">Email Sent Notifications</h3>
+              <p className="text-sm text-muted-foreground">Get notified when emails are successfully sent</p>
             </div>
             <Switch
               checked={settings.notifications.emailSent}
@@ -243,8 +243,8 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Campaign Completed</h3>
-              <p className="text-sm text-gray-600">Get notified when campaigns finish processing</p>
+              <h3 className="font-medium text-foreground">Campaign Completed</h3>
+              <p className="text-sm text-muted-foreground">Get notified when campaigns finish processing</p>
             </div>
             <Switch
               checked={settings.notifications.campaignCompleted}
@@ -254,8 +254,8 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Monthly Reports</h3>
-              <p className="text-sm text-gray-600">Receive monthly performance summaries</p>
+              <h3 className="font-medium text-foreground">Monthly Reports</h3>
+              <p className="text-sm text-muted-foreground">Receive monthly performance summaries</p>
             </div>
             <Switch
               checked={settings.notifications.monthlyReport}
@@ -265,8 +265,8 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">System Updates</h3>
-              <p className="text-sm text-gray-600">Get notified about new features and updates</p>
+              <h3 className="font-medium text-foreground">System Updates</h3>
+              <p className="text-sm text-muted-foreground">Get notified about new features and updates</p>
             </div>
             <Switch
               checked={settings.notifications.systemUpdates}
@@ -279,19 +279,19 @@ export default function SettingsPage() {
       {/* Privacy & Security */}
       <Card className="p-6">
         <div className="flex items-center space-x-2 mb-6">
-          <Shield className="h-5 w-5 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900">Privacy & Security</h2>
+          <Shield className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-semibold text-foreground">Privacy & Security</h2>
         </div>
 
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
               Data Retention Period
             </label>
             <select
               value={settings.privacy.dataRetention}
               onChange={(e) => handleInputChange('privacy', 'dataRetention', e.target.value)}
-              className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full md:w-auto px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="30">30 days</option>
               <option value="90">90 days</option>
@@ -299,15 +299,15 @@ export default function SettingsPage() {
               <option value="365">1 year</option>
               <option value="-1">Keep forever</option>
             </select>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               How long to keep your campaign data and email logs
             </p>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Analytics Tracking</h3>
-              <p className="text-sm text-gray-600">Allow us to collect anonymous usage data to improve the service</p>
+              <h3 className="font-medium text-foreground">Analytics Tracking</h3>
+              <p className="text-sm text-muted-foreground">Allow us to collect anonymous usage data to improve the service</p>
             </div>
             <Switch
               checked={settings.privacy.analyticsTracking}
@@ -317,8 +317,8 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Third-party Integrations</h3>
-              <p className="text-sm text-gray-600">Allow connections to external services and APIs</p>
+              <h3 className="font-medium text-foreground">Third-party Integrations</h3>
+              <p className="text-sm text-muted-foreground">Allow connections to external services and APIs</p>
             </div>
             <Switch
               checked={settings.privacy.thirdPartyIntegrations}
@@ -331,24 +331,24 @@ export default function SettingsPage() {
       {/* Appearance */}
       <Card className="p-6">
         <div className="flex items-center space-x-2 mb-6">
-          <Palette className="h-5 w-5 text-gray-400" />
-          <h2 className="text-xl font-semibold text-gray-900">Appearance</h2>
+          <Palette className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-xl font-semibold text-foreground">Appearance</h2>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-muted-foreground mb-2">
             Theme Preference
           </label>
           <select
             value={settings.appearance.theme}
             onChange={(e) => handleInputChange('appearance', 'theme', e.target.value)}
-            className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full md:w-auto px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="light">Light</option>
             <option value="dark">Dark</option>
             <option value="system">System</option>
           </select>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Choose your preferred color scheme
           </p>
         </div>

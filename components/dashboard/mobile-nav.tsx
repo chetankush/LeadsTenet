@@ -18,7 +18,7 @@ export function MobileNav() {
           className="md:hidden"
           aria-label="Open navigation menu"
         >
-          <Menu className="h-5 w-5 text-gray-700" />
+          <Menu className="h-5 w-5 text-muted-foreground" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">

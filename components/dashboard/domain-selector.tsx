@@ -106,7 +106,7 @@ export function DomainSelector({
                 <Globe className="h-4 w-4" />
                 <span>{domain.domain_name}</span>
                 {domain.is_default && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
                     <Star className="h-3 w-3 mr-1" />
                     Default
                   </Badge>
@@ -168,8 +168,8 @@ export function DomainFromEmailInput({
             onChange={(e) => onLocalPartChange(e.target.value)}
             className="flex-1 px-3 py-2 border rounded-md"
           />
-          <span className="text-gray-500">@</span>
-          <span className="text-gray-400">
+          <span className="text-muted-foreground">@</span>
+          <span className="text-muted-foreground">
             {loading ? 'loading...' : 'select-domain.com'}
           </span>
         </div>
@@ -185,14 +185,14 @@ export function DomainFromEmailInput({
           placeholder="noreply"
           value={localPart}
           onChange={(e) => onLocalPartChange(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <span className="text-gray-500">@</span>
-        <span className="font-medium text-gray-700">
+        <span className="text-muted-foreground">@</span>
+        <span className="font-medium text-foreground">
           {selectedDomain.domain_name}
         </span>
       </div>
-      <p className="text-sm text-gray-500 mt-1">
+      <p className="text-sm text-muted-foreground mt-1">
         Full email: {localPart || 'noreply'}@{selectedDomain.domain_name}
       </p>
     </div>

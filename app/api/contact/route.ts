@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { rateLimit, getClientIp, tooManyRequests } from '@/lib/rate-limit'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -9,6 +10,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  */
 export async function POST(request: NextRequest) {
   try {
+    // Per-IP spam guard (this endpoint is unauthenticated).
+    const rl = rateLimit(`contact:${getClientIp(request)}`, 3, 10 * 60_000)
+    if (!rl.success) return tooManyRequests(rl)
+
     const { name, email, message } = await request.json()
 
     if (!name?.trim() || !email?.trim() || !message?.trim()) {

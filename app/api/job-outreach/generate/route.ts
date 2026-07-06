@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-helpers'
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit'
 import { jobOutreachService } from '@/lib/job-outreach-service'
 import type { StudentProfile, JobTarget } from '@/lib/job-outreach-service'
+import { logOutreachEvent } from '@/lib/outreach-analytics'
 
 interface GenerateRequest {
   student: StudentProfile
@@ -12,10 +14,14 @@ const MAX_TARGETS = 50
 
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await getAuthUser()
+    const { supabase, user } = await getAuthUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // AI generation is the costly endpoint — cap per user per minute.
+    const rl = rateLimit(`job-gen:${user.id}`, 10, 60_000)
+    if (!rl.success) return tooManyRequests(rl)
 
     const body: GenerateRequest = await request.json()
     const { student, targets } = body
@@ -48,6 +54,12 @@ export async function POST(request: NextRequest) {
     }
 
     const emails = await jobOutreachService.generateBatch(student, targets)
+
+    const succeeded = emails.filter((e) => !e.error).length
+    await logOutreachEvent(supabase, user.id, 'generated', {
+      requested: targets.length,
+      succeeded,
+    })
 
     return NextResponse.json({ success: true, emails })
   } catch (error) {

@@ -179,22 +179,22 @@ export function DomainManagement() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'verified':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
+        return <CheckCircle className="h-4 w-4 text-success" />
       case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />
+        return <Clock className="h-4 w-4 text-warning" />
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />
+        return <XCircle className="h-4 w-4 text-destructive" />
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />
+        return <Clock className="h-4 w-4 text-muted-foreground" />
     }
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Verified</Badge>
+        return <Badge variant="secondary" className="bg-success/10 text-success">Verified</Badge>
       case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>
+        return <Badge variant="secondary" className="bg-warning/10 text-warning">Pending</Badge>
       case 'failed':
         return <Badge variant="destructive">Failed</Badge>
       default:
@@ -268,9 +268,9 @@ export function DomainManagement() {
         <CardContent>
           {domains.length === 0 ? (
             <div className="text-center py-8">
-              <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No domains added</h3>
-              <p className="text-gray-500 mb-4">
+              <Globe className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No domains added</h3>
+              <p className="text-muted-foreground mb-4">
                 Add a custom domain to send emails from your own domain
               </p>
               <Button onClick={() => setShowAddDialog(true)}>
@@ -281,7 +281,7 @@ export function DomainManagement() {
           ) : (
             <div className="space-y-4">
               {domains.map((domain) => (
-                <Card key={domain.id} className="border-l-4 border-l-blue-500">
+                <Card key={domain.id} className="border-l-4 border-l-primary">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
@@ -290,14 +290,14 @@ export function DomainManagement() {
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium">{domain.domain_name}</h3>
                             {domain.is_default && (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                              <Badge variant="secondary" className="bg-primary/10 text-primary">
                                 <Star className="h-3 w-3 mr-1" />
                                 Default
                               </Badge>
                             )}
                             {getStatusBadge(domain.status)}
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             Added {new Date(domain.created_at).toLocaleDateString()}
                             {domain.verified_at && (
                               <span className="ml-2">
@@ -306,7 +306,7 @@ export function DomainManagement() {
                             )}
                           </p>
                           {domain.verification_error && (
-                            <p className="text-sm text-red-600 mt-1">
+                            <p className="text-sm text-destructive mt-1">
                               Error: {domain.verification_error}
                             </p>
                           )}
@@ -349,7 +349,7 @@ export function DomainManagement() {
                           variant="outline"
                           size="sm"
                           onClick={() => deleteDomain(domain.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -387,16 +387,16 @@ export function DomainManagement() {
                     <CardContent className="p-4">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                          <Label className="text-xs font-medium text-gray-500">TYPE</Label>
+                          <Label className="text-xs font-medium text-muted-foreground">TYPE</Label>
                           <div className="font-mono text-sm">{record.type}</div>
                         </div>
                         <div>
-                          <Label className="text-xs font-medium text-gray-500">NAME</Label>
+                          <Label className="text-xs font-medium text-muted-foreground">NAME</Label>
                           <div className="font-mono text-sm break-all">{record.name}</div>
                         </div>
                         <div className="md:col-span-2">
                           <div className="flex items-center justify-between">
-                            <Label className="text-xs font-medium text-gray-500">VALUE</Label>
+                            <Label className="text-xs font-medium text-muted-foreground">VALUE</Label>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -405,7 +405,7 @@ export function DomainManagement() {
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
-                          <div className="font-mono text-sm break-all bg-gray-50 p-2 rounded">
+                          <div className="font-mono text-sm break-all bg-muted p-2 rounded">
                             {record.value}
                           </div>
                         </div>
@@ -419,7 +419,7 @@ export function DomainManagement() {
 
               <div className="space-y-2">
                 <h4 className="font-medium">Next Steps:</h4>
-                <ol className="list-decimal list-inside text-sm space-y-1 text-gray-600">
+                <ol className="list-decimal list-inside text-sm space-y-1 text-muted-foreground">
                   <li>Add all DNS records above to your domain's DNS settings</li>
                   <li>Wait for DNS propagation (usually 5-30 minutes, max 48 hours)</li>
                   <li>Click "Verify" button to check domain verification status</li>

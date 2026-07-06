@@ -12,15 +12,15 @@ export async function RecentCampaigns() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800'
+        return 'bg-success/10 text-success'
       case 'draft':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-muted text-muted-foreground'
       case 'paused':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
       case 'completed':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-primary/10 text-primary'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -35,7 +35,7 @@ export async function RecentCampaigns() {
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Recent Campaigns</h2>
+        <h2 className="text-lg font-semibold text-foreground">Recent Campaigns</h2>
         <Link href="/dashboard/campaigns">
           <Button variant="outline" size="sm">
             View All
@@ -46,10 +46,10 @@ export async function RecentCampaigns() {
       {recentCampaigns.length > 0 ? (
         <div className="space-y-4">
           {recentCampaigns.map((campaign) => (
-            <div key={campaign.id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+            <div key={campaign.id} className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-accent transition-colors">
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Mail className="h-5 w-5 text-blue-600" />
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Mail className="h-5 w-5 text-primary" />
                 </div>
               </div>
               
@@ -57,7 +57,7 @@ export async function RecentCampaigns() {
                 <div className="flex items-center justify-between">
                   <Link 
                     href={`/dashboard/campaigns/${campaign.id}`}
-                    className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate"
+                    className="text-sm font-medium text-foreground hover:text-primary truncate"
                   >
                     {campaign.name}
                   </Link>
@@ -66,7 +66,7 @@ export async function RecentCampaigns() {
                   </Badge>
                 </div>
                 
-                <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
+                <div className="mt-1 flex items-center space-x-4 text-xs text-muted-foreground">
                   <div className="flex items-center">
                     <Users className="h-3 w-3 mr-1" />
                     {campaign.total_leads} leads
@@ -86,8 +86,8 @@ export async function RecentCampaigns() {
         </div>
       ) : (
         <div className="text-center py-8">
-          <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">No campaigns yet</p>
+          <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">No campaigns yet</p>
           <Link href="/dashboard/campaigns/new">
             <Button>
               Create Your First Campaign

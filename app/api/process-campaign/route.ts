@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-helpers'
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit'
 import { dbService } from '@/lib/database-service'
 import { processLeadsWithAI } from '@/lib/ai-service'
 import { emailService } from '@/lib/email-service'
 import type { LeadData, ChannelType } from '@/lib/ai-service'
 import type { EmailConfig } from '@/lib/email-service'
+
+// Cap inline work per request (serverless timeout guard). Larger campaigns
+// need a background queue rather than synchronous in-request sending.
+const MAX_LEADS_PER_RUN = 200
 
 interface ProcessCampaignRequest {
   campaignId: string
@@ -21,6 +26,10 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Rate limit: triggers paid AI + email sending.
+    const rl = rateLimit(`process-campaign:${user.id}`, 5, 60_000)
+    if (!rl.success) return tooManyRequests(rl)
 
     const body: ProcessCampaignRequest = await request.json()
     const { campaignId, channels = ['email'], sendEmails = false, emailConfig } = body
@@ -41,6 +50,15 @@ export async function POST(request: NextRequest) {
     const leads = await dbService.getCampaignLeads(campaignId)
     if (leads.length === 0) {
       return NextResponse.json({ error: 'No leads found in campaign' }, { status: 400 })
+    }
+
+    if (leads.length > MAX_LEADS_PER_RUN) {
+      return NextResponse.json(
+        {
+          error: `This campaign has ${leads.length} leads. Inline processing is limited to ${MAX_LEADS_PER_RUN} per run — split the campaign or enable background processing.`,
+        },
+        { status: 400 }
+      )
     }
 
     console.log('📋 Campaign details:')

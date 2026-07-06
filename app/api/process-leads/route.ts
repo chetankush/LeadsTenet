@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-helpers'
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit'
 import { processLeadsWithAI } from '@/lib/ai-service'
 import { emailService } from '@/lib/email-service'
 import type { LeadData, ChannelType } from '@/lib/ai-service'
 import type { EmailConfig } from '@/lib/email-service'
+
+// Cap inline work so one request can't loop over thousands of AI calls / email
+// sends and exceed the serverless timeout. Larger lists need a background queue.
+const MAX_LEADS_PER_RUN = 200
 
 interface ProcessLeadsRequest {
   leads: LeadData[]
@@ -22,6 +27,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Rate limit: this endpoint triggers paid AI + email sending.
+    const rl = rateLimit(`process-leads:${user.id}`, 5, 60_000)
+    if (!rl.success) return tooManyRequests(rl)
+
     const body: ProcessLeadsRequest = await request.json()
     const { leads, channels, emailConfig, sendEmails } = body
 
@@ -36,6 +45,15 @@ export async function POST(request: NextRequest) {
     if (!leads || leads.length === 0) {
       console.error('❌ No leads provided')
       return NextResponse.json({ error: 'No leads provided' }, { status: 400 })
+    }
+
+    if (leads.length > MAX_LEADS_PER_RUN) {
+      return NextResponse.json(
+        {
+          error: `Too many leads in one request (${leads.length}). Please process up to ${MAX_LEADS_PER_RUN} at a time.`,
+        },
+        { status: 400 }
+      )
     }
 
     if (!channels || channels.length === 0) {

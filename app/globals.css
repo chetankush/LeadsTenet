@@ -15,74 +15,88 @@
 }
 
 @layer base {
+  /* =========================================================================
+     Morning Edition design system — the landing page identity, applied to the
+     WHOLE platform via the shadcn semantic tokens (HSL channels so /opacity
+     modifiers keep working). Light = Morning Edition, `.dark` = Night Edition.
+     Primary = vermilion; surfaces = warm newsprint; text = warm ink.
+     ========================================================================= */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 48 22% 95%; /* warm newsprint paper */
+    --foreground: 0 0% 8%; /* warm ink */
+    --card: 45 40% 98%; /* surface lifts off paper */
+    --card-foreground: 0 0% 8%;
+    --popover: 45 40% 98%;
+    --popover-foreground: 0 0% 8%;
+    --primary: 11 83% 54%; /* sunrise vermilion */
+    --primary-foreground: 38 24% 7%; /* near-black, AA on vermilion */
+    --secondary: 52 17% 91%;
+    --secondary-foreground: 0 0% 8%;
+    --muted: 51 18% 92%;
+    --muted-foreground: 60 5% 39%; /* caption grey, AA on paper */
+    --accent: 47 18% 90%; /* neutral hover surface */
+    --accent-foreground: 0 0% 8%;
+    --destructive: 8 68% 45%;
+    --destructive-foreground: 45 40% 98%;
+    --success: 130 26% 34%;
+    --success-foreground: 45 40% 98%;
+    --warning: 38 62% 42%;
+    --warning-foreground: 38 24% 7%;
+    --border: 45 12% 87%; /* hairline */
+    --input: 48 13% 84%;
+    --ring: 11 83% 54%; /* vermilion focus */
+    --chart-1: 11 83% 54%;
+    --chart-2: 39 62% 49%;
+    --chart-3: 24 30% 42%;
+    --chart-4: 60 6% 45%;
+    --chart-5: 12 45% 66%;
+    --radius: 0.625rem;
+    --sidebar-background: 51 20% 93%;
+    --sidebar-foreground: 51 6% 25%;
+    --sidebar-primary: 11 83% 54%;
+    --sidebar-primary-foreground: 38 24% 7%;
+    --sidebar-accent: 47 17% 90%;
+    --sidebar-accent-foreground: 0 0% 8%;
+    --sidebar-border: 47 13% 86%;
+    --sidebar-ring: 11 83% 54%;
   }
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 0 0% 5%; /* near-black paper */
+    --foreground: 43 16% 92%; /* warm ink */
+    --card: 40 7% 8%;
+    --card-foreground: 43 16% 92%;
+    --popover: 40 6% 10%;
+    --popover-foreground: 43 16% 92%;
+    --primary: 11 83% 54%; /* vermilion sings on black */
+    --primary-foreground: 38 24% 7%;
+    --secondary: 60 4% 13%;
+    --secondary-foreground: 43 16% 92%;
+    --muted: 45 7% 12%;
+    --muted-foreground: 54 5% 63%;
+    --accent: 51 10% 15%;
+    --accent-foreground: 43 16% 92%;
+    --destructive: 8 62% 48%;
+    --destructive-foreground: 13 74% 95%;
+    --success: 128 30% 55%;
+    --success-foreground: 40 7% 8%;
+    --warning: 40 64% 57%;
+    --warning-foreground: 40 7% 8%;
+    --border: 51 10% 15%;
+    --input: 43 8% 18%;
+    --ring: 11 83% 54%;
+    --chart-1: 11 86% 59%;
+    --chart-2: 40 65% 57%;
+    --chart-3: 24 40% 58%;
+    --chart-4: 60 5% 55%;
+    --chart-5: 12 55% 68%;
+    --sidebar-background: 60 3% 6%;
+    --sidebar-foreground: 54 5% 64%;
+    --sidebar-primary: 11 83% 54%;
+    --sidebar-primary-foreground: 38 24% 7%;
+    --sidebar-accent: 60 4% 13%;
+    --sidebar-accent-foreground: 43 16% 92%;
+    --sidebar-border: 45 6% 13%;
+    --sidebar-ring: 11 83% 54%;
   }
 }
 
@@ -91,6 +105,104 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Morning Edition — landing-page design tokens (warm newsprint + vermilion).
+   Deliberately new variable NAMES so they never collide with the shadcn
+   tokens above; the dashboard is unaffected. `.dark` = the Night Edition
+   inversion, scoped on the landing to #le-root.
+   --------------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --paper: #f6f5f1;      /* warm newsprint — never pure #fff */
+    --ink: #141414;        /* ~16:1 on paper */
+    --hairline: #e3e1db;   /* rules, dividers, grid */
+    --caption: #6b6b64;    /* secondary text */
+    --vermilion: #eb4a27;  /* the one rationed accent */
+    --vermilink: #c23a1e;  /* darkened accent for AA body/link text */
+    --dawn: 235 74 39;     /* accent channels for the single dawn glow */
+    /* display face — unified on Geist (enterprise, ships with the app) */
+    --font-fraunces: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+  .dark {
+    --paper: #0c0c0c;
+    --ink: #edebe6;
+    --hairline: #26251f;
+    --caption: #9c9b92;
+    --vermilion: #eb4a27;
+    --vermilink: #ff6b4a;  /* lighter accent for AA on near-black */
+    --dawn: 235 74 39;
+  }
+}
+
+@layer components {
+  /* Editorial underline that wipes in on hover / keyboard focus */
+  .link-wipe {
+    position: relative;
+  }
+  .link-wipe::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    height: 1px;
+    width: 100%;
+    background: var(--vermilion);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .link-wipe:hover::after,
+  .link-wipe:focus-visible::after {
+    transform: scaleX(1);
+  }
+}
+
+/* Self-typing caret for the Dispatch personalization line */
+@keyframes le-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.animate-caret {
+  animation: le-caret 1s steps(1, end) infinite;
+}
+
+/* One-shot "a reply just arrived" beat for the Gmail mockup top row */
+@keyframes le-rowin {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.le-rowin {
+  animation: le-rowin 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
+}
+
+#le-root ::selection {
+  background: var(--vermilion);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-caret {
+    animation: none;
+  }
+  .le-rowin {
+    animation: none;
+  }
+  .link-wipe::after {
+    transition: none;
   }
 }

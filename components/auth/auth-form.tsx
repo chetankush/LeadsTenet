@@ -128,10 +128,10 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
   return (
     <div className="space-y-5">
       <div className="space-y-1 text-center">
-        <h2 className="text-2xl font-bold text-black">
+        <h2 className="text-2xl font-bold text-foreground">
           {isSignUp ? 'Create your account' : 'Welcome back'}
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           {isSignUp ? 'Start sending smarter campaigns' : 'Sign in to your dashboard'}
         </p>
       </div>
@@ -155,10 +155,10 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-200" />
+          <span className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-gray-400">or</span>
+          <span className="bg-card px-2 text-muted-foreground">or</span>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
 
         <Button
           type="submit"
-          className="w-full rounded-full bg-black font-bold hover:bg-gray-800"
+          className="w-full rounded-full font-bold"
           disabled={busy}
         >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -236,18 +236,18 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-muted-foreground">
         {isSignUp ? (
           <>
             Already have an account?{' '}
-            <Link href="/sign-in" className="font-medium text-black hover:underline">
+            <Link href="/sign-in" className="font-medium text-primary hover:underline">
               Sign in
             </Link>
           </>
         ) : (
           <>
             No account?{' '}
-            <Link href="/sign-up" className="font-medium text-black hover:underline">
+            <Link href="/sign-up" className="font-medium text-primary hover:underline">
               Sign up
             </Link>
           </>

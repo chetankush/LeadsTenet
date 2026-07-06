@@ -15,9 +15,9 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'LeadsTeNet — AI-Powered Lead Generation & Email Campaigns',
+  title: 'LeadsTenet — The honest way to reach recruiters',
   description:
-    'Upload your leads, let AI personalize every email, and send targeted campaigns in minutes. Excel → AI → Emails.',
+    'Turn your résumé into a few genuinely personal emails to the right recruiters — sent from your own inbox, timed to land in their morning. You approve every one.',
 }
 
 export default function RootLayout({
@@ -26,8 +26,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="font-sans antialiased">
         {children}
         <Toaster />
       </body>

@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Bell, Search, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { MobileNav } from '@/components/dashboard/mobile-nav'
 
 const PLAN_LABELS: Record<string, string> = {
@@ -68,46 +67,32 @@ export function DashboardHeader() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6">
+      <div className="flex h-16 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
           <MobileNav />
-          <h1 className="truncate text-lg md:text-2xl font-semibold text-gray-900">
-            Welcome back, {user?.firstName || 'there'}!
+          <h1 className="truncate text-base font-semibold tracking-tight text-foreground md:text-lg">
+            Welcome back, {user?.firstName || 'there'}
           </h1>
         </div>
 
-        <div className="flex items-center space-x-2 md:space-x-4">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input placeholder="Search campaigns..." className="pl-10 w-64" />
+        <div className="flex items-center gap-3">
+          <div className="hidden text-right sm:block">
+            <p className="max-w-[12rem] truncate text-sm font-medium text-foreground">
+              {user?.fullName || user?.email || '…'}
+            </p>
+            <p className="text-xs text-muted-foreground">{user?.plan || 'Free Plan'}</p>
           </div>
-
-          {/* Notifications */}
-          <Button variant="ghost" size="sm" aria-label="Notifications">
-            <Bell className="h-5 w-5 text-gray-500" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="h-5 w-5 text-muted-foreground" />
           </Button>
-
-          {/* User Menu */}
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium text-gray-900 max-w-[12rem] truncate">
-                {user?.fullName || user?.email || '...'}
-              </p>
-              <p className="text-xs text-gray-500">{user?.plan || 'Free Plan'}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              disabled={signingOut}
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut className="h-5 w-5 text-gray-500" />
-            </Button>
-          </div>
         </div>
       </div>
     </header>

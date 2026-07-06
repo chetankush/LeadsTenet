@@ -72,8 +72,8 @@ export default function NewCampaignPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Campaign</h1>
-          <p className="text-gray-600 mt-2">Set up a new email campaign</p>
+          <h1 className="text-3xl font-bold text-foreground">Create New Campaign</h1>
+          <p className="text-muted-foreground mt-2">Set up a new email campaign</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function NewCampaignPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Campaign Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-2">
               Campaign Name *
             </label>
             <input
@@ -89,7 +89,7 @@ export default function NewCampaignPage() {
               id="name"
               value={campaignName}
               onChange={(e) => setCampaignName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Enter campaign name..."
               required
             />
@@ -97,7 +97,7 @@ export default function NewCampaignPage() {
 
           {/* Campaign Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-muted-foreground mb-2">
               Description (Optional)
             </label>
             <textarea
@@ -105,19 +105,19 @@ export default function NewCampaignPage() {
               value={campaignDescription}
               onChange={(e) => setCampaignDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Describe your campaign..."
             />
           </div>
 
           {/* Email Configuration */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Settings</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Email Settings</h3>
 
             <div className="space-y-4">
               {/* Domain Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Sending Domain
                 </label>
                 <DomainSelector
@@ -125,7 +125,7 @@ export default function NewCampaignPage() {
                   onValueChange={setSelectedDomainId}
                   placeholder="Select domain for sending emails..."
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Choose a verified custom domain or leave empty to use the default Resend domain
                 </p>
               </div>
@@ -133,7 +133,7 @@ export default function NewCampaignPage() {
               {/* From Email Configuration */}
               {selectedDomainId && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     From Email Address
                   </label>
                   <DomainFromEmailInput
@@ -146,7 +146,7 @@ export default function NewCampaignPage() {
 
               {/* From Name */}
               <div>
-                <label htmlFor="fromName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="fromName" className="block text-sm font-medium text-muted-foreground mb-2">
                   From Name
                 </label>
                 <input
@@ -154,14 +154,14 @@ export default function NewCampaignPage() {
                   id="fromName"
                   value={fromName}
                   onChange={(e) => setFromName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Your Name or Company"
                 />
               </div>
 
               {/* Reply-To Email */}
               <div>
-                <label htmlFor="replyToEmail" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="replyToEmail" className="block text-sm font-medium text-muted-foreground mb-2">
                   Reply-To Email (Optional)
                 </label>
                 <input
@@ -169,7 +169,7 @@ export default function NewCampaignPage() {
                   id="replyToEmail"
                   value={replyToEmail}
                   onChange={(e) => setReplyToEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="replies@yourcompany.com"
                 />
               </div>
@@ -201,12 +201,12 @@ export default function NewCampaignPage() {
       </Card>
 
       {/* Next Steps */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
+      <Card className="p-6 bg-primary/10 border-primary/20">
         <div className="flex items-start space-x-3">
-          <Upload className="h-5 w-5 text-blue-600 mt-0.5" />
+          <Upload className="h-5 w-5 text-primary mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-900">Next Step: Upload Leads</h3>
-            <p className="text-blue-700 text-sm mt-1">
+            <h3 className="font-semibold text-foreground">Next Step: Upload Leads</h3>
+            <p className="text-muted-foreground text-sm mt-1">
               After creating your campaign, you'll need to upload leads to start sending emails. 
               You can do this from the campaigns list or the upload page.
             </p>

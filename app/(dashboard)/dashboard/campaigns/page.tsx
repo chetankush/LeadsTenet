@@ -61,12 +61,12 @@ export default function CampaignsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'draft': return 'bg-gray-100 text-gray-800'
-      case 'paused': return 'bg-yellow-100 text-yellow-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      case 'archived': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'active': return 'bg-success/10 text-success'
+      case 'draft': return 'bg-muted text-muted-foreground'
+      case 'paused': return 'bg-warning/10 text-warning'
+      case 'completed': return 'bg-primary/10 text-primary'
+      case 'archived': return 'bg-destructive/10 text-destructive'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -79,10 +79,10 @@ export default function CampaignsPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Campaigns</h1>
+          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-gray-500">Loading campaigns...</div>
+          <div className="text-muted-foreground">Loading campaigns...</div>
         </div>
       </div>
     )
@@ -92,10 +92,10 @@ export default function CampaignsPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Campaigns</h1>
+          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
         </div>
         <div className="text-center py-12">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-destructive">Error: {error}</div>
           <Button onClick={fetchCampaigns} className="mt-4">
             Try Again
           </Button>
@@ -108,8 +108,8 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Campaigns</h1>
-          <p className="text-gray-600 mt-2">Manage your email campaigns and track performance</p>
+          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
+          <p className="text-muted-foreground mt-2">Manage your email campaigns and track performance</p>
         </div>
         <div className="flex space-x-3">
           <Button onClick={() => router.push('/dashboard/upload')} variant="outline">
@@ -125,9 +125,9 @@ export default function CampaignsPage() {
 
       {campaigns.length === 0 ? (
         <Card className="p-12 text-center">
-          <Mail className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No campaigns yet</h3>
-          <p className="text-gray-600 mb-6">Get started by uploading leads and creating your first campaign</p>
+          <Mail className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No campaigns yet</h3>
+          <p className="text-muted-foreground mb-6">Get started by uploading leads and creating your first campaign</p>
           <Button onClick={() => router.push('/dashboard/upload')}>
             <Plus className="mr-2 h-4 w-4" />
             Upload Leads to Create Campaign
@@ -140,45 +140,45 @@ export default function CampaignsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
+                    <h3 className="text-lg font-semibold text-foreground">{campaign.name}</h3>
                     <Badge className={getStatusColor(campaign.status)}>
                       {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
                     </Badge>
                   </div>
                   
                   {campaign.description && (
-                    <p className="text-gray-600 mb-4">{campaign.description}</p>
+                    <p className="text-muted-foreground mb-4">{campaign.description}</p>
                   )}
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-gray-400" />
+                      <Users className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-gray-500">Total Leads</p>
+                        <p className="text-sm text-muted-foreground">Total Leads</p>
                         <p className="font-semibold">{campaign.total_leads}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-gray-400" />
+                      <Mail className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-gray-500">Emails Sent</p>
+                        <p className="text-sm text-muted-foreground">Emails Sent</p>
                         <p className="font-semibold">{campaign.emails_sent}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <TrendingUp className="h-4 w-4 text-gray-400" />
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-gray-500">Delivered</p>
+                        <p className="text-sm text-muted-foreground">Delivered</p>
                         <p className="font-semibold">{campaign.emails_delivered}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-gray-500">Open Rate</p>
+                        <p className="text-sm text-muted-foreground">Open Rate</p>
                         <p className="font-semibold">
                           {calculateOpenRate(campaign.emails_opened, campaign.emails_delivered)}
                         </p>
@@ -186,7 +186,7 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center mt-4 text-sm text-gray-500">
+                  <div className="flex items-center mt-4 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4 mr-1" />
                     Created {new Date(campaign.created_at).toLocaleDateString()}
                   </div>

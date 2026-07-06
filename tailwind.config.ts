@@ -9,7 +9,22 @@ const config: Config = {
 	],
 	theme: {
 		extend: {
+			fontFamily: {
+				// Geist is now the platform-wide typeface (enterprise, ships with the app)
+				sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+				geist: ['var(--font-geist-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				'geist-mono': ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+				serif: ['var(--font-fraunces)', 'Georgia', 'Times New Roman', 'serif'],
+			},
 			colors: {
+				// Morning Edition — newsprint + one rationed accent
+				paper: 'var(--paper)',
+				ink: 'var(--ink)',
+				hairline: 'var(--hairline)',
+				caption: 'var(--caption)',
+				vermilion: 'var(--vermilion)',
+				vermilink: 'var(--vermilink)',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				card: {
@@ -39,6 +54,14 @@ const config: Config = {
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
 				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

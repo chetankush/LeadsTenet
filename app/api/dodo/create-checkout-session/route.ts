@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth-helpers'
+import { rateLimit, tooManyRequests } from '@/lib/rate-limit'
 import { dbService } from '@/lib/database-service'
 import { getDodoClient, getProductIdForPlan } from '@/lib/dodo-service'
 
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const rl = rateLimit(`dodo-checkout:${user.id}`, 10, 60_000)
+    if (!rl.success) return tooManyRequests(rl)
 
     const { planId } = await request.json()
 
