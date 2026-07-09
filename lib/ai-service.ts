@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { createLazyService } from '@/lib/lazy-service'
 
 interface LeadData {
   name?: string
@@ -405,8 +406,9 @@ Return JSON format:
   }
 }
 
-// Export a singleton instance
-export const aiService = new AIService()
+// Export a lazily-created singleton so Next.js build-time route imports do not
+// require runtime-only secrets.
+export const aiService = createLazyService(() => new AIService())
 
 // Helper functions for quick access
 export const processLeadsWithAI = async (

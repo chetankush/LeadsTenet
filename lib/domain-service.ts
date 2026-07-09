@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { getSupabaseClient } from './supabase-client'
+import { createLazyService } from '@/lib/lazy-service'
 
 interface DomainDNSRecord {
   type: string
@@ -501,8 +502,9 @@ export class DomainService {
   }
 }
 
-// Export singleton instance
-export const domainService = new DomainService()
+// Export a lazily-created singleton so build-time route imports do not require
+// runtime-only Resend credentials.
+export const domainService = createLazyService(() => new DomainService())
 
 // Export types
 export type {

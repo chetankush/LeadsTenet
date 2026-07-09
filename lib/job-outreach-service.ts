@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { sanitizeForPrompt } from '@/lib/sanitize'
+import { createLazyService } from '@/lib/lazy-service'
 
 /**
  * Job Outreach Service
@@ -279,4 +280,4 @@ ${student.fullName}${student.phone ? `\n${student.phone}` : ''}`
   }
 }
 
-export const jobOutreachService = new JobOutreachService()
+export const jobOutreachService = createLazyService(() => new JobOutreachService())

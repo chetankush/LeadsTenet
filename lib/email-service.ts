@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import type { PersonalizedContent, LeadData } from './ai-service'
 import { domainService } from './domain-service'
+import { createLazyService } from '@/lib/lazy-service'
 
 interface EmailConfig {
   fromEmail: string
@@ -330,8 +331,9 @@ export class EmailService {
   }
 }
 
-// Export singleton instance
-export const emailService = new EmailService()
+// Export a lazily-created singleton so build-time route imports do not require
+// runtime-only Resend credentials.
+export const emailService = createLazyService(() => new EmailService())
 
 // Helper function for quick email sending
 export const sendPersonalizedEmail = async (
