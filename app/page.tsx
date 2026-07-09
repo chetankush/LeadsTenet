@@ -4,11 +4,8 @@ import { HeroDispatch } from '@/components/landing/me-hero'
 import { Reveal } from '@/components/landing/me-reveal'
 import { InkStamp } from '@/components/landing/ink-stamp'
 
-export const metadata = {
-  title: 'LeadsTenet: The honest way to reach recruiters',
-  description:
-    'Turn your résumé into a few genuinely personal emails to the right recruiters, sent from your own inbox, timed to land in their morning. You approve every one. No auto-apply. No scraping.',
-}
+// Metadata (title, description, canonical, Open Graph, Twitter) is inherited
+// from the root layout so the homepage stays the single source of truth.
 
 /* Shared editorial furniture */
 const KICKER = 'font-geist-mono text-[12px] uppercase tracking-[0.16em] text-caption'

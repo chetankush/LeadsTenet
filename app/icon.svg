@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none" role="img" aria-label="LeadsTenet">
+  <defs>
+    <linearGradient id="lt-tile" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f0552f"/>
+      <stop offset="1" stop-color="#e2481f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#lt-tile)"/>
+  <path d="M412 116 L236 258 L296 404 Z" fill="#e3ddcf"/>
+  <path d="M412 116 L108 210 L236 258 Z" fill="#f6f5f1"/>
+</svg>
